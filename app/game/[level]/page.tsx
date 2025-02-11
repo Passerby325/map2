@@ -20,15 +20,22 @@ const getMazeSize = (level: string): number => {
 
 // 改进的迷宫生成算法
 const generateMaze = (size: number) => {
-  // 确保size是有效的数字
-  const validSize = Math.max(10, Math.min(50, size))
+  // 确保size是有效的数字且为奇数（这样能确保有足够的墙壁空间）
+  const validSize = Math.max(10, Math.min(50, Math.floor(size)))
   
-  // 使用Array.from来确保正确初始化二维数组
-  const maze = Array.from({ length: validSize }, () => 
-    Array.from({ length: validSize }, () => 1)
-  )
+  // 初始化迷宫，全部设为墙
+  const maze: number[][] = []
+  for (let i = 0; i < validSize; i++) {
+    maze[i] = []
+    for (let j = 0; j < validSize; j++) {
+      maze[i][j] = 1
+    }
+  }
   
   const carve = (x: number, y: number) => {
+    // 确保坐标有效
+    if (x < 0 || x >= validSize || y < 0 || y >= validSize) return
+    
     const directions = [
       [0, -2], [2, 0], [0, 2], [-2, 0]
     ].sort(() => Math.random() - 0.5)
@@ -38,35 +45,48 @@ const generateMaze = (size: number) => {
     for (const [dx, dy] of directions) {
       const newX = x + dx
       const newY = y + dy
+      const wallX = x + dx/2
+      const wallY = y + dy/2
       
+      // 检查边界
       if (
         newX > 0 && newX < validSize - 2 &&
         newY > 0 && newY < validSize - 2 &&
         maze[newY][newX] === 1
       ) {
-        maze[y + dy/2][x + dx/2] = 0
-        maze[newY][newX] = 0
-        carve(newX, newY)
+        // 确保墙的坐标有效
+        if (wallX >= 0 && wallX < validSize && wallY >= 0 && wallY < validSize) {
+          maze[wallY][wallX] = 0
+          maze[newY][newX] = 0
+          carve(newX, newY)
+        }
       }
     }
   }
   
+  // 从起点开始生成
   carve(1, 1)
   
-  // 确保从终点到起点有路径
+  // 确保起点和终点及其周围的路径
   const endX = validSize - 2
   const endY = validSize - 2
   
-  // 创建到终点的通道
-  for (let i = endX; i >= endX - 2; i--) {
-    maze[endY][i] = 0
-  }
-  for (let i = endY; i >= endY - 2; i--) {
-    maze[i][endX] = 0
+  // 安全地设置路径
+  const setPath = (x: number, y: number, value: number) => {
+    if (x >= 0 && x < validSize && y >= 0 && y < validSize) {
+      maze[y][x] = value
+    }
   }
   
-  maze[endY][endX] = 2   // 终点
-  maze[1][1] = 0         // 起点
+  // 创建到终点的通道
+  for (let i = 0; i < 3; i++) {
+    if (endX - i >= 0) setPath(endX - i, endY, 0)
+    if (endY - i >= 0) setPath(endX, endY - i, 0)
+  }
+  
+  // 设置起点和终点
+  setPath(1, 1, 0)
+  setPath(endX, endY, 2)
   
   return maze
 }
