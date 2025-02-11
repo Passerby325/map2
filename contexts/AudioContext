@@ -1,24 +1,79 @@
-import React, { useState, useRef } from 'react';
+"use client"
 
-// 全局音频上下文
-export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
+import type React from "react"
+import { createContext, useState, useContext, useEffect, type ReactNode, useCallback, useMemo } from "react"
+import { safePlayAudio } from "../utils/audio"
 
-  // 背景音乐控制
-  const togglePlay = () => {
-    if (audioRef.current) {
-      isPlaying ? audioRef.current.pause() : audioRef.current.play();
-      setIsPlaying(!isPlaying);
+interface AudioContextType {
+  isPlaying: boolean
+  togglePlay: () => void
+  setVolume: (volume: number) => void
+  playSound: (type: 'move' | 'complete' | 'bump') => void
+}
+
+const GameAudioContext = createContext<AudioContextType | undefined>(undefined)
+
+export const useAudio = () => {
+  const context = useContext(GameAudioContext)
+  if (!context) {
+    throw new Error("useAudio must be used within an AudioProvider")
+  }
+  return context
+}
+
+export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+
+  useEffect(() => {
+    const audioElement = new Audio("/background-music.mp3")
+    audioElement.loop = true
+    setAudio(audioElement)
+
+    return () => {
+      audioElement.pause()
+      audioElement.src = ""
     }
-  };
+  }, [])
 
-  return (
-    <AudioContext.Provider value={{ isPlaying, togglePlay }}>
-      {children}
-      <audio ref={audioRef} loop>
-        <source src="/background-music.mp3" type="audio/mpeg" />
-      </audio>
-    </AudioContext.Provider>
-  );
-}; 
+  const togglePlay = useCallback(() => {
+    if (audio) {
+      if (isPlaying) {
+        audio.pause()
+      } else {
+        safePlayAudio(audio)
+      }
+      setIsPlaying(prev => !prev)
+    }
+  }, [audio, isPlaying])
+
+  const setVolume = useCallback((volume: number) => {
+    if (audio) {
+      audio.volume = volume
+    }
+  }, [audio])
+
+  const playSound = useCallback((type: 'move' | 'complete' | 'bump') => {
+    const soundVolume = localStorage.getItem("soundVolume") || "0.5"
+    const audio = new Audio(`/sounds/${type}.mp3`)
+    audio.volume = Number(soundVolume)
+    safePlayAudio(audio)
+  }, [])
+
+  const value = useMemo(() => ({
+    isPlaying,
+    togglePlay,
+    setVolume,
+    playSound
+  }), [isPlaying, togglePlay, setVolume, playSound])
+
+  useEffect(() => {
+    const storedVolume = localStorage.getItem("musicVolume")
+    if (storedVolume && audio) {
+      audio.volume = Number.parseFloat(storedVolume)
+    }
+  }, [audio])
+
+  return <GameAudioContext.Provider value={value}>{children}</GameAudioContext.Provider>
+}
+

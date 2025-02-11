@@ -28,8 +28,8 @@ const generateMaze = (size: number) => {
     }
 
     horizontal ? 
-      divide(x, y, width, wallY-y+1) || divide(x, wallY, width, y+height-wallY) :
-      divide(x, y, wallX-x+1, height) || divide(wallX, y, x+width-wallX, height)
+      (divide(x, y, width, wallY-y+1), divide(x, wallY, width, y+height-wallY)) :
+      (divide(x, y, wallX-x+1, height), divide(wallX, y, x+width-wallX, height))
   }
 
   divide(0, 0, size, size);
