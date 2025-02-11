@@ -228,7 +228,7 @@ export default function Game({ params }: { params: { level: string } }) {
               </motion.button>
             )}
 
-            {/* 制作详情和语言切换按钮 */}
+            {/* 制作详情按钮 */}
             <div className="flex flex-col gap-2 mt-4">
               <Link 
                 href="/credits" 
@@ -236,12 +236,6 @@ export default function Game({ params }: { params: { level: string } }) {
               >
                 {t('credits')}
               </Link>
-              <button
-                onClick={toggleLanguage}
-                className="w-48 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
-              >
-                {language === 'zh' ? 'English' : '中文'}
-              </button>
             </div>
           </div>
 
