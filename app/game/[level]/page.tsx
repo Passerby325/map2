@@ -5,39 +5,56 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import VolumeControl from "../../../components/VolumeControl"
 
-// 获取迷宫大小
+// 修改迷宫大小获取函数，确保大小是奇数
 const getMazeSize = (level: string): number => {
   const sizes = {
-    "1": 10,
+    "1": 11,
     "2": 15,
-    "3": 20,
-    "4": 25,
-    "5": 30,
-    "random": Math.floor(Math.random() * 21) + 10 // 随机 10-30 大小
+    "3": 19,
+    "4": 23,
+    "5": 27,
+    "random": Math.floor(Math.random() * 10) * 2 + 11 // 随机生成 11,13,15,...,29 的奇数
   }
-  return sizes[level as keyof typeof sizes] || 10
+  return sizes[level as keyof typeof sizes] || 11
 }
 
 // 改进的迷宫生成算法
 const generateMaze = (size: number) => {
+  // 初始化迷宫，全部设为墙
   const maze = Array(size).fill(null).map(() => Array(size).fill(1))
   
+  // 确保起点和终点位置
+  const start = { x: 1, y: 1 }
+  const end = { x: size - 2, y: size - 2 }
+  
+  // 递归生成迷宫
   const carve = (x: number, y: number) => {
     const directions = [
-      [0, -2], [2, 0], [0, 2], [-2, 0]
-    ].sort(() => Math.random() - 0.5)
+      [0, -2], // 上
+      [2, 0],  // 右
+      [0, 2],  // 下
+      [-2, 0]  // 左
+    ]
     
-    maze[y][x] = 0
+    // 随机打乱方向
+    for (let i = directions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [directions[i], directions[j]] = [directions[j], directions[i]]
+    }
     
+    maze[y][x] = 0 // 设置当前位置为路径
+    
+    // 尝试所有方向
     for (const [dx, dy] of directions) {
       const newX = x + dx
       const newY = y + dy
       
       if (
-        newX > 0 && newX < size - 2 &&
-        newY > 0 && newY < size - 2 &&
+        newX > 0 && newX < size - 1 &&
+        newY > 0 && newY < size - 1 &&
         maze[newY][newX] === 1
       ) {
+        // 打通墙壁
         maze[y + dy/2][x + dx/2] = 0
         maze[newY][newX] = 0
         carve(newX, newY)
@@ -45,22 +62,34 @@ const generateMaze = (size: number) => {
     }
   }
   
-  carve(1, 1)
+  // 从起点开始生成迷宫
+  carve(start.x, start.y)
   
-  // 确保从终点到起点有路径
-  const endX = size - 2
-  const endY = size - 2
-  
-  // 创建到终点的通道
-  for (let i = endX; i >= endX - 2; i--) {
-    maze[endY][i] = 0
+  // 确保终点可达
+  const ensurePathToEnd = () => {
+    // 从终点向起点方向创建路径
+    let currentX = end.x
+    let currentY = end.y
+    
+    while (currentX > 1 || currentY > 1) {
+      maze[currentY][currentX] = 0
+      
+      // 随机选择是向左还是向上移动
+      if (Math.random() < 0.5 && currentX > 1) {
+        maze[currentY][currentX - 1] = 0
+        currentX -= 2
+      } else if (currentY > 1) {
+        maze[currentY - 1][currentX] = 0
+        currentY -= 2
+      }
+    }
   }
-  for (let i = endY; i >= endY - 2; i--) {
-    maze[i][endX] = 0
-  }
   
-  maze[endY][endX] = 2   // 终点
-  maze[1][1] = 0         // 起点
+  ensurePathToEnd()
+  
+  // 设置起点和终点
+  maze[start.y][start.x] = 0
+  maze[end.y][end.x] = 2
   
   return maze
 }
