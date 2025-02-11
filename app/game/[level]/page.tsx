@@ -5,103 +5,100 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import VolumeControl from "../../../components/VolumeControl"
 
-// 获取迷宫大小
+// 修改迷宫大小获取函数
 const getMazeSize = (level: string): number => {
   const sizes = {
-    "1": 11,
-    "2": 15,
-    "3": 19,
-    "4": 23,
-    "5": 27,
-    "random": Math.floor(Math.random() * 10) * 2 + 11 // 11-29的奇数
+    "1": 11,  // 简单
+    "2": 13,
+    "3": 15,
+    "4": 15,
+    "5": 17,
+    "6": 17,  // 中等
+    "7": 19,
+    "8": 19,
+    "9": 21,
+    "10": 21,
+    "11": 23, // 困难
+    "12": 23,
+    "13": 25,
+    "14": 25,
+    "15": 27  // 最难
   }
   return sizes[level as keyof typeof sizes] || 11
 }
 
-// 简化的迷宫生成算法
+// 改进的迷宫生成算法
 const generateMaze = (size: number) => {
   // 初始化迷宫，全部设为墙
-  const maze = Array(size).fill(0).map(() => Array(size).fill(1))
+  const maze = Array(size).fill(null).map(() => Array(size).fill(1))
   
-  // 定义墙的位置列表
-  type Wall = { x: number; y: number }
-  const walls: Wall[] = []
+  // 确保起点和终点位置
+  const start = { x: 1, y: 1 }
+  const end = { x: size - 2, y: size - 2 }
   
-  // 将起点周围的墙加入列表
-  const addWalls = (x: number, y: number) => {
+  // 递归生成迷宫
+  const carve = (x: number, y: number) => {
     const directions = [
-      { dx: 0, dy: -2 }, // 上
-      { dx: 2, dy: 0 },  // 右
-      { dx: 0, dy: 2 },  // 下
-      { dx: -2, dy: 0 }  // 左
+      [0, -2], // 上
+      [2, 0],  // 右
+      [0, 2],  // 下
+      [-2, 0]  // 左
     ]
     
-    for (const { dx, dy } of directions) {
+    // 随机打乱方向
+    for (let i = directions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [directions[i], directions[j]] = [directions[j], directions[i]]
+    }
+    
+    maze[y][x] = 0 // 设置当前位置为路径
+    
+    // 尝试所有方向
+    for (const [dx, dy] of directions) {
       const newX = x + dx
       const newY = y + dy
+      
       if (
         newX > 0 && newX < size - 1 &&
         newY > 0 && newY < size - 1 &&
         maze[newY][newX] === 1
       ) {
-        walls.push({ x: newX, y: newY })
+        // 打通墙壁
+        maze[y + dy/2][x + dx/2] = 0
+        maze[newY][newX] = 0
+        carve(newX, newY)
       }
     }
   }
   
-  // 从起点开始
-  const startX = 1
-  const startY = 1
-  maze[startY][startX] = 0
-  addWalls(startX, startY)
-  
-  // 处理所有墙
-  while (walls.length > 0) {
-    // 随机选择一面墙
-    const wallIndex = Math.floor(Math.random() * walls.length)
-    const wall = walls[wallIndex]
-    walls.splice(wallIndex, 1)
-    
-    const { x, y } = wall
-    
-    // 计算这面墙两边的单元格
-    const neighbors = [
-      { x: x, y: y - 2 },     // 上
-      { x: x + 2, y: y },     // 右
-      { x: x, y: y + 2 },     // 下
-      { x: x - 2, y: y }      // 左
-    ].filter(pos => 
-      pos.x > 0 && pos.x < size - 1 &&
-      pos.y > 0 && pos.y < size - 1
-    )
-    
-    // 统计已经是路径的邻居数量
-    const pathCount = neighbors.filter(pos => maze[pos.y][pos.x] === 0).length
-    
-    // 如果只有一个邻居是路径，打通这面墙
-    if (pathCount === 1) {
-      maze[y][x] = 0
-      // 打通墙和路径之间的格子
-      for (const pos of neighbors) {
-        if (maze[pos.y][pos.x] === 0) {
-          const midX = (x + pos.x) / 2
-          const midY = (y + pos.y) / 2
-          maze[midY][midX] = 0
-        }
-      }
-      addWalls(x, y)
-    }
-  }
-  
-  // 设置终点
-  const endX = size - 2
-  const endY = size - 2
-  maze[endY][endX] = 2
+  // 从起点开始生成迷宫
+  carve(start.x, start.y)
   
   // 确保终点可达
-  if (maze[endY][endX - 1] === 1 && maze[endY - 1][endX] === 1) {
-    maze[endY][endX - 1] = 0
+  const ensurePathToEnd = () => {
+    // 从终点向起点方向创建路径
+    let currentX = end.x
+    let currentY = end.y
+    
+    while (currentX > 1 || currentY > 1) {
+      maze[currentY][currentX] = 0
+      
+      // 随机选择是向左还是向上移动
+      if (Math.random() < 0.5 && currentX > 1) {
+        maze[currentY][currentX - 1] = 0
+        currentX -= 2
+      } else if (currentY > 1) {
+        maze[currentY - 1][currentX] = 0
+        currentY -= 2
+      }
+    }
   }
+  
+  ensurePathToEnd()
+  
+  // 设置起点和终点
+  maze[start.y][start.x] = 0
+  maze[end.y][end.x] = 2
   
   return maze
 }
