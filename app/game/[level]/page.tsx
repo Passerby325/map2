@@ -31,23 +31,18 @@ const generateMaze = (size: number) => {
       [-2, 0]  // 左
     ]
     
-    // 随机打乱方向
     directions.sort(() => Math.random() - 0.5)
+    maze[y][x] = 0
     
-    maze[y][x] = 0 // 设置当前位置为路径
-    
-    // 尝试所有方向
     for (const [dx, dy] of directions) {
       const newX = x + dx
       const newY = y + dy
       
-      // 检查是否在边界内且是墙
       if (
-        newX > 0 && newX < size - 1 && 
-        newY > 0 && newY < size - 1 && 
+        newX > 0 && newX < size - 2 && // 修改边界检查
+        newY > 0 && newY < size - 2 && // 修改边界检查
         maze[newY][newX] === 1
       ) {
-        // 打通墙壁
         maze[y + dy/2][x + dx/2] = 0
         maze[newY][newX] = 0
         carve(newX, newY)
@@ -55,12 +50,15 @@ const generateMaze = (size: number) => {
     }
   }
   
-  // 从(1,1)开始生成
   carve(1, 1)
   
-  // 设置起点和终点
-  maze[1][1] = 0
-  maze[size-2][size-2] = 2
+  // 确保终点周围是可达的
+  const endX = size - 2
+  const endY = size - 2
+  maze[endY][endX-1] = 0 // 终点左侧
+  maze[endY-1][endX] = 0 // 终点上方
+  maze[endY][endX] = 2   // 终点
+  maze[1][1] = 0         // 起点
   
   return maze
 }
