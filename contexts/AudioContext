@@ -1,0 +1,24 @@
+import React, { useState, useRef } from 'react';
+
+// 全局音频上下文
+export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // 背景音乐控制
+  const togglePlay = () => {
+    if (audioRef.current) {
+      isPlaying ? audioRef.current.pause() : audioRef.current.play();
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  return (
+    <AudioContext.Provider value={{ isPlaying, togglePlay }}>
+      {children}
+      <audio ref={audioRef} loop>
+        <source src="/background-music.mp3" type="audio/mpeg" />
+      </audio>
+    </AudioContext.Provider>
+  );
+}; 
