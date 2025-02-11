@@ -5,49 +5,76 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import VolumeControl from "../../../components/VolumeControl"
 
-// 20x20迷宫生成算法
-const generateMaze = (size: number) => {
-  const maze = Array(size).fill(null).map(() => Array(size).fill(1));
-  
-  // 使用递归分割算法生成迷宫
-  const divide = (x: number, y: number, width: number, height: number) => {
-    if (width < 3 || height < 3) return;
-
-    const horizontal = height > width;
-    const wallX = x + (horizontal ? 0 : Math.floor(Math.random()*(width-2))+1);
-    const wallY = y + (horizontal ? Math.floor(Math.random()*(height-2))+1 : 0);
-    const passageX = wallX + (horizontal ? Math.floor(Math.random()*width) : 0);
-    const passageY = wallY + (horizontal ? 0 : Math.floor(Math.random()*height));
-
-    for(let i=0; i<(horizontal ? width : height); i++) {
-      const currX = wallX + (horizontal ? i : 0);
-      const currY = wallY + (horizontal ? 0 : i);
-      if(currX !== passageX || currY !== passageY) {
-        maze[currY][currX] = 0;
-      }
-    }
-
-    horizontal ? 
-      (divide(x, y, width, wallY-y+1), divide(x, wallY, width, y+height-wallY)) :
-      (divide(x, y, wallX-x+1, height), divide(wallX, y, x+width-wallX, height))
+// 获取迷宫大小
+const getMazeSize = (level: string): number => {
+  const sizes = {
+    "1": 10,
+    "2": 15,
+    "3": 20,
+    "4": 25,
+    "5": 30
   }
-
-  divide(0, 0, size, size);
-  maze[1][1] = 0; // 起点
-  maze[size-2][size-2] = 2; // 终点
-  return maze;
+  return sizes[level as keyof typeof sizes] || 10
 }
 
-const PLAYER = 3;
-const VISIBLE_RADIUS = 3;
-const MAZE_SIZE = 20;
+// 改进的迷宫生成算法
+const generateMaze = (size: number) => {
+  // 初始化迷宫，全部设为墙
+  const maze = Array(size).fill(null).map(() => Array(size).fill(1))
+  
+  // 递归生成迷宫
+  const carve = (x: number, y: number) => {
+    const directions = [
+      [0, -2], // 上
+      [2, 0],  // 右
+      [0, 2],  // 下
+      [-2, 0]  // 左
+    ]
+    
+    // 随机打乱方向
+    directions.sort(() => Math.random() - 0.5)
+    
+    maze[y][x] = 0 // 设置当前位置为路径
+    
+    // 尝试所有方向
+    for (const [dx, dy] of directions) {
+      const newX = x + dx
+      const newY = y + dy
+      
+      // 检查是否在边界内且是墙
+      if (
+        newX > 0 && newX < size - 1 && 
+        newY > 0 && newY < size - 1 && 
+        maze[newY][newX] === 1
+      ) {
+        // 打通墙壁
+        maze[y + dy/2][x + dx/2] = 0
+        maze[newY][newX] = 0
+        carve(newX, newY)
+      }
+    }
+  }
+  
+  // 从(1,1)开始生成
+  carve(1, 1)
+  
+  // 设置起点和终点
+  maze[1][1] = 0
+  maze[size-2][size-2] = 2
+  
+  return maze
+}
+
+const PLAYER = 3
+const VISIBLE_RADIUS = 4
 
 export default function Game({ params }: { params: { level: string } }) {
-  const [maze] = useState(() => generateMaze(MAZE_SIZE));
-  const [gameState, setGameState] = useState(maze);
-  const [playerPos, setPlayerPos] = useState({ x: 1, y: 1 });
-  const [gameStarted, setGameStarted] = useState(false);
-  const [gameWon, setGameWon] = useState(false);
+  const mazeSize = getMazeSize(params.level)
+  const [maze] = useState(() => generateMaze(mazeSize))
+  const [gameState, setGameState] = useState(maze)
+  const [playerPos, setPlayerPos] = useState({ x: 1, y: 1 })
+  const [gameStarted, setGameStarted] = useState(false)
+  const [gameWon, setGameWon] = useState(false)
 
   useEffect(() => {
     const newGameState = maze.map(row => [...row]);
@@ -62,8 +89,8 @@ export default function Game({ params }: { params: { level: string } }) {
 
   const updateVisibility = () => {
     const newGameState = maze.map(row => [...row]);
-    for (let y = 0; y < MAZE_SIZE; y++) {
-      for (let x = 0; x < MAZE_SIZE; x++) {
+    for (let y = 0; y < mazeSize; y++) {
+      for (let x = 0; x < mazeSize; x++) {
         const distance = Math.sqrt(
           Math.pow(y - playerPos.y, 2) + 
           Math.pow(x - playerPos.x, 2)
@@ -75,7 +102,7 @@ export default function Game({ params }: { params: { level: string } }) {
     setGameState(newGameState);
     
     // 检查胜利条件
-    if(playerPos.x === MAZE_SIZE-2 && playerPos.y === MAZE_SIZE-2) {
+    if(playerPos.x === mazeSize-2 && playerPos.y === mazeSize-2) {
       setGameWon(true);
     }
   }
@@ -107,12 +134,19 @@ export default function Game({ params }: { params: { level: string } }) {
                 {row.map((cell, x) => (
                   <motion.div
                     key={`${x}-${y}`}
-                    className={`w-6 h-6 border border-gray-800 ${
-                      cell === 1 ? "bg-gray-800" :
-                      cell === PLAYER ? "bg-red-500 rounded-full" :
-                      cell === -1 ? "bg-gray-900" :
-                      cell === 2 ? "bg-green-500" : "bg-gray-200"
-                    }`}
+                    className={`
+                      ${mazeSize <= 15 ? 'w-8 h-8' : 'w-6 h-6'}
+                      ${cell === 1 ? 'bg-gray-800' : 'bg-gray-100'}
+                      ${cell === PLAYER ? 'bg-red-500 rounded-full' : ''}
+                      ${cell === -1 ? 'bg-gray-900' : ''}
+                      ${cell === 2 ? 'bg-green-500' : ''}
+                      ${
+                        cell !== 1 ? 
+                        'border-transparent' : 
+                        'border-gray-900 border'
+                      }
+                      transition-colors
+                    `}
                   />
                 ))}
               </div>
