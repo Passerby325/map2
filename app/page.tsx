@@ -5,9 +5,11 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import VolumeControl from "../components/VolumeControl"
 import { useAudio } from "../contexts/AudioContext"
+import { useLanguage } from "../contexts/LanguageContext"
 
 export default function Home() {
   const { isPlaying, togglePlay } = useAudio()
+  const { t, toggleLanguage, language } = useLanguage()
 
   return (
     <div className="relative h-screen w-full overflow-hidden flex flex-col justify-between">
@@ -62,6 +64,14 @@ export default function Home() {
         <VolumeControl type="music" initialVolume={0.5} />
         <VolumeControl type="sound" initialVolume={0.5} />
       </div>
+
+      {/* 语言切换按钮 */}
+      <button
+        onClick={toggleLanguage}
+        className="absolute top-4 right-4 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        {language === 'en' ? '中文' : 'English'}
+      </button>
     </div>
   )
 }
