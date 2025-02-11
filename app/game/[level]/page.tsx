@@ -18,21 +18,27 @@ const getMazeSize = (level: string): number => {
   return sizes[level as keyof typeof sizes] || 10
 }
 
-// 改进的迷宫生成算法
-const generateMaze = (size: number) => {
-  // 确保size是有效的数字
+// 添加一个简单的种子随机数生成器
+const seededRandom = (seed: number) => {
+  let value = seed
+  return () => {
+    value = (value * 16807) % 2147483647
+    return (value - 1) / 2147483646
+  }
+}
+
+// 修改迷宫生成算法，添加种子参数
+const generateMaze = (size: number, seed: number) => {
+  const random = seededRandom(seed)
   const validSize = Math.max(10, Math.min(50, Math.floor(size)))
-  
-  // 使用更安全的方式初始化二维数组
   const maze = new Array(validSize).fill(0).map(() => new Array(validSize).fill(1))
   
   const carve = (x: number, y: number) => {
-    // 确保坐标有效
     if (x < 1 || x >= validSize - 1 || y < 1 || y >= validSize - 1) return
     
     const directions = [
       [0, -2], [2, 0], [0, 2], [-2, 0]
-    ].sort(() => Math.random() - 0.5)
+    ].sort(() => random() - 0.5)  // 使用seeded随机数
     
     maze[y][x] = 0
     
@@ -91,6 +97,7 @@ const VISIBLE_RADIUS = 4
 
 export default function Game({ params }: { params: { level: string } }) {
   const [customSize, setCustomSize] = useState<number>(30)
+  const [seed, setSeed] = useState<string>(Math.floor(Math.random() * 1000000).toString())
   const [isSelectingSize, setIsSelectingSize] = useState(params.level === "random")
   const mazeSize = params.level === "random" ? customSize : getMazeSize(params.level)
   const [maze, setMaze] = useState<number[][]>([])
@@ -100,15 +107,15 @@ export default function Game({ params }: { params: { level: string } }) {
   const [gameWon, setGameWon] = useState(false)
   const [steps, setSteps] = useState(0)
 
-  // 初始化迷宫
+  // 修改初始化迷宫函数
   const initializeMaze = (size: number) => {
-    const newMaze = generateMaze(size)
+    const newMaze = generateMaze(size, parseInt(seed))
     setMaze(newMaze)
     setGameState(newMaze)
     setIsSelectingSize(false)
   }
 
-  // 在游戏开始前渲染大小选择界面
+  // 修改选择界面，添加种子码输入
   if (isSelectingSize) {
     return (
       <div className="min-h-screen bg-gray-900 p-4 text-white">
@@ -130,6 +137,30 @@ export default function Game({ params }: { params: { level: string } }) {
                 <span>50x50</span>
               </div>
             </div>
+            
+            {/* 添加种子码输入 */}
+            <div className="mb-6">
+              <label className="block text-lg mb-2">种子码</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={seed}
+                  onChange={(e) => setSeed(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700 rounded-lg"
+                  placeholder="输入种子码"
+                />
+                <button
+                  onClick={() => setSeed(Math.floor(Math.random() * 1000000).toString())}
+                  className="px-3 py-2 bg-blue-500 rounded-lg hover:bg-blue-600"
+                >
+                  随机
+                </button>
+              </div>
+              <p className="text-sm text-gray-400 mt-1">
+                使用相同的种子码和大小可以生成相同的迷宫
+              </p>
+            </div>
+
             <button
               onClick={() => initializeMaze(customSize)}
               className="w-full py-3 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
