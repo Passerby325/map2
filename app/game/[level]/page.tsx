@@ -125,10 +125,14 @@ export default function Game({ params }: { params: { level: string } }) {
   const [steps, setSteps] = useState(0)  // 添加步数统计
 
   useEffect(() => {
-    const newGameState = maze.map(row => [...row]);
-    newGameState[playerPos.y][playerPos.x] = PLAYER;
-    setGameState(newGameState);
-  }, [playerPos, maze]);
+    if (gameStarted) {
+      updateVisibility();
+      // 检查胜利条件
+      if (playerPos.x === mazeSize - 2 && playerPos.y === mazeSize - 2) {
+        setGameWon(true);
+      }
+    }
+  }, [playerPos, gameStarted]);
 
   const startGame = () => {
     setGameStarted(true);
@@ -174,11 +178,6 @@ export default function Game({ params }: { params: { level: string } }) {
     
     newGameState[playerPos.y][playerPos.x] = PLAYER
     setGameState(newGameState)
-    
-    // 检查胜利条件
-    if(playerPos.x === mazeSize-2 && playerPos.y === mazeSize-2) {
-      setGameWon(true);
-    }
   }
 
   const move = (dx: number, dy: number) => {
@@ -193,10 +192,10 @@ export default function Game({ params }: { params: { level: string } }) {
   }
 
   useEffect(() => {
-    if (gameStarted) {
+    if (gameStarted && tempVisibility !== 'normal') {
       updateVisibility();
     }
-  }, [tempVisibility, gameStarted]);
+  }, [tempVisibility]);
 
   return (
     <div className="min-h-screen bg-gray-900 p-4 text-white">
