@@ -28,7 +28,7 @@ const generateMaze = (size: number) => {
   
   const carve = (x: number, y: number) => {
     // 确保坐标有效
-    if (x < 0 || x >= validSize || y < 0 || y >= validSize) return
+    if (x < 1 || x >= validSize - 1 || y < 1 || y >= validSize - 1) return
     
     const directions = [
       [0, -2], [2, 0], [0, 2], [-2, 0]
@@ -42,14 +42,15 @@ const generateMaze = (size: number) => {
       const wallX = x + dx/2
       const wallY = y + dy/2
       
-      // 检查边界
+      // 更严格的边界检查
       if (
-        newX > 0 && newX < validSize - 2 &&
-        newY > 0 && newY < validSize - 2 &&
+        newX >= 1 && newX < validSize - 1 &&
+        newY >= 1 && newY < validSize - 1 &&
         maze[newY][newX] === 1
       ) {
         // 确保墙的坐标有效
-        if (wallX >= 0 && wallX < validSize && wallY >= 0 && wallY < validSize) {
+        if (wallX >= 1 && wallX < validSize - 1 && 
+            wallY >= 1 && wallY < validSize - 1) {
           maze[wallY][wallX] = 0
           maze[newY][newX] = 0
           carve(newX, newY)
