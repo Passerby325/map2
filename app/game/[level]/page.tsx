@@ -109,6 +109,10 @@ const VISIBLE_RADIUS = 4
 
 export default function Game({ params }: { params: { level: string } }) {
   const { t, toggleLanguage, language } = useLanguage()
+  
+  // 添加调试日志
+  console.log('Current language:', language)
+  
   const mazeSize = getMazeSize(params.level)
   const [maze] = useState(() => generateMaze(mazeSize))
   const [gameState, setGameState] = useState(maze)
@@ -165,12 +169,11 @@ export default function Game({ params }: { params: { level: string } }) {
   return (
     <div className="min-h-screen bg-gray-900 p-4 text-white">
       <div className="h-screen flex flex-col">
-        {/* 顶部标题和步数 */}
         <div className="flex-none relative">
-          {/* 添加语言切换按钮 */}
+          {/* 移动语言切换按钮到更明显的位置 */}
           <button
             onClick={toggleLanguage}
-            className="absolute top-0 right-20 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+            className="fixed top-4 right-24 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors z-50"
           >
             {language === 'zh' ? 'EN' : '中文'}
           </button>

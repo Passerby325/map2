@@ -57,11 +57,18 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>('zh')
 
   const toggleLanguage = () => {
-    setLanguage(prev => prev === 'zh' ? 'en' : 'zh')
+    console.log('Toggling language from:', language)
+    setLanguage(prev => {
+      const newLang = prev === 'zh' ? 'en' : 'zh'
+      console.log('To:', newLang)
+      return newLang
+    })
   }
 
   const t = (key: string) => {
-    return translations[language][key as keyof typeof translations.en] || key
+    const translation = translations[language][key as keyof typeof translations.en] || key
+    console.log(`Translating ${key} to:`, translation)
+    return translation
   }
 
   return (
