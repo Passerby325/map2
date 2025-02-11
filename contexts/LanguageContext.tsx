@@ -37,6 +37,8 @@ const translations = {
     'cancel': '返回',
     'flash': '灵光一现！',
     'godEye': '天眼，开！！！',
+    'flashCount': '灵光一现使用次数',
+    'godEyeCount': '天眼使用次数',
   },
   en: {
     'selectLevel': 'Select Level',
@@ -64,6 +66,8 @@ const translations = {
     'cancel': 'Back',
     'flash': 'Flash!',
     'godEye': 'God\'s Eye!',
+    'flashCount': 'Flash Used',
+    'godEyeCount': 'God\'s Eye Used',
   }
 }
 

@@ -123,6 +123,8 @@ export default function Game({ params }: { params: { level: string } }) {
   const [gameStarted, setGameStarted] = useState(false)
   const [gameWon, setGameWon] = useState(false)
   const [steps, setSteps] = useState(0)  // 添加步数统计
+  const [flashCount, setFlashCount] = useState(0)
+  const [godEyeCount, setGodEyeCount] = useState(0)
 
   useEffect(() => {
     if (gameStarted) {
@@ -134,6 +136,13 @@ export default function Game({ params }: { params: { level: string } }) {
     }
   }, [playerPos, gameStarted]);
 
+  useEffect(() => {
+    // 游戏开始前也要显示玩家
+    const newGameState = maze.map(row => [...row])
+    newGameState[playerPos.y][playerPos.x] = PLAYER
+    setGameState(newGameState)
+  }, []);
+
   const startGame = () => {
     setGameStarted(true);
     updateVisibility();
@@ -142,8 +151,8 @@ export default function Game({ params }: { params: { level: string } }) {
   const updateVisibility = () => {
     const newGameState = maze.map(row => [...row])
     
-    if (isBlindMode) {
-      // 盲人模式
+    if (isBlindMode && gameStarted) {
+      // 盲人模式且游戏已开始
       for (let y = 0; y < mazeSize; y++) {
         for (let x = 0; x < mazeSize; x++) {
           const distance = Math.sqrt(
@@ -164,14 +173,20 @@ export default function Game({ params }: { params: { level: string } }) {
         }
       }
     } else {
-      // 正常模式
+      // 正常模式或游戏未开始
       for (let y = 0; y < mazeSize; y++) {
         for (let x = 0; x < mazeSize; x++) {
-          const distance = Math.sqrt(
-            Math.pow(y - playerPos.y, 2) + 
-            Math.pow(x - playerPos.x, 2)
-          )
-          newGameState[y][x] = distance <= VISIBLE_RADIUS ? maze[y][x] : -1
+          if (!gameStarted) {
+            // 游戏未开始时显示全图
+            newGameState[y][x] = maze[y][x]
+          } else {
+            // 游戏开始后显示可见范围
+            const distance = Math.sqrt(
+              Math.pow(y - playerPos.y, 2) + 
+              Math.pow(x - playerPos.x, 2)
+            )
+            newGameState[y][x] = distance <= VISIBLE_RADIUS ? maze[y][x] : -1
+          }
         }
       }
     }
@@ -264,16 +279,22 @@ export default function Game({ params }: { params: { level: string } }) {
                 {isBlindMode && (
                   <div className="flex flex-col gap-2 mt-4">
                     <button
-                      onClick={() => setTempVisibility('flash')}
+                      onClick={() => {
+                        setTempVisibility('flash')
+                        setFlashCount(prev => prev + 1)
+                      }}
                       className="w-48 py-2 bg-yellow-600 rounded-lg hover:bg-yellow-700"
                     >
-                      {t('flash')}
+                      {t('flash')} ({flashCount})
                     </button>
                     <button
-                      onClick={() => setTempVisibility('godEye')}
+                      onClick={() => {
+                        setTempVisibility('godEye')
+                        setGodEyeCount(prev => prev + 1)
+                      }}
                       className="w-48 py-2 bg-purple-600 rounded-lg hover:bg-purple-700"
                     >
-                      {t('godEye')}
+                      {t('godEye')} ({godEyeCount})
                     </button>
                   </div>
                 )}
@@ -315,7 +336,13 @@ export default function Game({ params }: { params: { level: string } }) {
               <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
                 <div className="text-center p-6 bg-gray-800 rounded-lg">
                   <h2 className="text-2xl font-bold mb-4">{t('congratulations')}</h2>
-                  <p className="mb-4">{t('totalSteps')}: {steps}</p>
+                  <p className="mb-2">{t('totalSteps')}: {steps}</p>
+                  {isBlindMode && (
+                    <>
+                      <p className="mb-2">{t('flash')}: {flashCount}</p>
+                      <p className="mb-4">{t('godEye')}: {godEyeCount}</p>
+                    </>
+                  )}
                   <Link href="/levels" className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">
                     {t('backToLevels')}
                   </Link>
