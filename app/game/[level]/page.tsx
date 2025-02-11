@@ -169,15 +169,8 @@ export default function Game({ params }: { params: { level: string } }) {
   return (
     <div className="min-h-screen bg-gray-900 p-4 text-white">
       <div className="h-screen flex flex-col">
+        {/* 顶部标题和步数 */}
         <div className="flex-none relative">
-          {/* 移动语言切换按钮到更明显的位置 */}
-          <button
-            onClick={toggleLanguage}
-            className="fixed top-4 right-24 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors z-50"
-          >
-            {language === 'zh' ? 'EN' : '中文'}
-          </button>
-
           <motion.h1 className="text-3xl font-bold text-center mb-4">
             {t('level')} {params.level}
           </motion.h1>
@@ -192,7 +185,7 @@ export default function Game({ params }: { params: { level: string } }) {
         {/* 主要游戏区域 */}
         <div className="flex-1 flex items-center justify-center gap-8 max-h-[calc(100vh-200px)]">
           {/* 左侧控制区 */}
-          <div className="flex-none">
+          <div className="flex-none flex flex-col gap-4">
             {gameStarted ? (
               <div className="grid grid-cols-3 gap-4 w-48">
                 <div className="col-start-2">
@@ -234,6 +227,22 @@ export default function Game({ params }: { params: { level: string } }) {
                 {t('startGame')}
               </motion.button>
             )}
+
+            {/* 制作详情和语言切换按钮 */}
+            <div className="flex flex-col gap-2 mt-4">
+              <Link 
+                href="/credits" 
+                className="w-48 py-2 bg-gray-700 text-center rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                {t('credits')}
+              </Link>
+              <button
+                onClick={toggleLanguage}
+                className="w-48 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                {language === 'zh' ? 'English' : '中文'}
+              </button>
+            </div>
           </div>
 
           {/* 右侧迷宫区域 */}

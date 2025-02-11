@@ -25,10 +25,12 @@ const translations = {
     'backToLevels': '返回关卡选择',
     'backToHome': '返回主页',
     'randomLevel': '随机关卡',
-    'up': '↑',
-    'down': '↓',
-    'left': '←',
-    'right': '→',
+    'up': '上',
+    'down': '下',
+    'left': '左',
+    'right': '右',
+    'credits': '制作详情',
+    'language': '语言',
   },
   en: {
     'selectLevel': 'Select Level',
@@ -44,10 +46,12 @@ const translations = {
     'backToLevels': 'Back to Levels',
     'backToHome': 'Back to Home',
     'randomLevel': 'Random Level',
-    'up': '↑',
-    'down': '↓',
-    'left': '←',
-    'right': '→',
+    'up': 'Up',
+    'down': 'Down',
+    'left': 'Left',
+    'right': 'Right',
+    'credits': 'Credits',
+    'language': 'Language',
   }
 }
 
