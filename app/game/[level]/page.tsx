@@ -20,7 +20,13 @@ const getMazeSize = (level: string): number => {
 
 // 改进的迷宫生成算法
 const generateMaze = (size: number) => {
-  const maze = Array(size).fill(null).map(() => Array(size).fill(1))
+  // 确保size是有效的数字
+  const validSize = Math.max(10, Math.min(50, size))
+  
+  // 使用Array.from来确保正确初始化二维数组
+  const maze = Array.from({ length: validSize }, () => 
+    Array.from({ length: validSize }, () => 1)
+  )
   
   const carve = (x: number, y: number) => {
     const directions = [
@@ -34,8 +40,8 @@ const generateMaze = (size: number) => {
       const newY = y + dy
       
       if (
-        newX > 0 && newX < size - 2 &&
-        newY > 0 && newY < size - 2 &&
+        newX > 0 && newX < validSize - 2 &&
+        newY > 0 && newY < validSize - 2 &&
         maze[newY][newX] === 1
       ) {
         maze[y + dy/2][x + dx/2] = 0
@@ -48,8 +54,8 @@ const generateMaze = (size: number) => {
   carve(1, 1)
   
   // 确保从终点到起点有路径
-  const endX = size - 2
-  const endY = size - 2
+  const endX = validSize - 2
+  const endY = validSize - 2
   
   // 创建到终点的通道
   for (let i = endX; i >= endX - 2; i--) {
