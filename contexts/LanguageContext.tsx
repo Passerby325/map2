@@ -24,6 +24,11 @@ const translations = {
     'totalSteps': '总步数',
     'backToLevels': '返回关卡选择',
     'backToHome': '返回主页',
+    'randomLevel': '随机关卡',
+    'up': '↑',
+    'down': '↓',
+    'left': '←',
+    'right': '→',
   },
   en: {
     'selectLevel': 'Select Level',
@@ -38,6 +43,11 @@ const translations = {
     'totalSteps': 'Total Steps',
     'backToLevels': 'Back to Levels',
     'backToHome': 'Back to Home',
+    'randomLevel': 'Random Level',
+    'up': '↑',
+    'down': '↓',
+    'left': '←',
+    'right': '→',
   }
 }
 

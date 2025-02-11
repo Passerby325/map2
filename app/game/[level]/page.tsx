@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import VolumeControl from "../../../components/VolumeControl"
+import { useLanguage } from "../../../contexts/LanguageContext"
 
 // 修改迷宫大小获取函数
 const getMazeSize = (level: string): number => {
@@ -107,6 +108,7 @@ const PLAYER = 3
 const VISIBLE_RADIUS = 4
 
 export default function Game({ params }: { params: { level: string } }) {
+  const { t, toggleLanguage, language } = useLanguage()
   const mazeSize = getMazeSize(params.level)
   const [maze] = useState(() => generateMaze(mazeSize))
   const [gameState, setGameState] = useState(maze)
@@ -164,14 +166,22 @@ export default function Game({ params }: { params: { level: string } }) {
     <div className="min-h-screen bg-gray-900 p-4 text-white">
       <div className="h-screen flex flex-col">
         {/* 顶部标题和步数 */}
-        <div className="flex-none">
+        <div className="flex-none relative">
+          {/* 添加语言切换按钮 */}
+          <button
+            onClick={toggleLanguage}
+            className="absolute top-0 right-20 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+          >
+            {language === 'zh' ? 'EN' : '中文'}
+          </button>
+
           <motion.h1 className="text-3xl font-bold text-center mb-4">
-            {params.level === "random" ? "随机关卡" : `关卡 ${params.level}`}
+            {t('level')} {params.level}
           </motion.h1>
           
           <div className="text-center mb-4">
             <span className="bg-blue-600 px-4 py-2 rounded-full">
-              步数: {steps}
+              {t('steps')}: {steps}
             </span>
           </div>
         </div>
@@ -187,7 +197,7 @@ export default function Game({ params }: { params: { level: string } }) {
                     onClick={() => move(0, -1)}
                     className="w-full py-4 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
                   >
-                    ↑
+                    {t('up')}
                   </button>
                 </div>
                 <div className="flex gap-4 col-span-3 justify-center">
@@ -195,13 +205,13 @@ export default function Game({ params }: { params: { level: string } }) {
                     onClick={() => move(-1, 0)}
                     className="py-4 px-8 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
                   >
-                    ←
+                    {t('left')}
                   </button>
                   <button
                     onClick={() => move(1, 0)}
                     className="py-4 px-8 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
                   >
-                    →
+                    {t('right')}
                   </button>
                 </div>
                 <div className="col-start-2">
@@ -209,7 +219,7 @@ export default function Game({ params }: { params: { level: string } }) {
                     onClick={() => move(0, 1)}
                     className="w-full py-4 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
                   >
-                    ↓
+                    {t('down')}
                   </button>
                 </div>
               </div>
@@ -218,7 +228,7 @@ export default function Game({ params }: { params: { level: string } }) {
                 onClick={startGame}
                 className="w-48 py-4 bg-green-600 rounded-lg hover:bg-green-700 text-xl"
               >
-                开始游戏
+                {t('startGame')}
               </motion.button>
             )}
           </div>
@@ -249,10 +259,10 @@ export default function Game({ params }: { params: { level: string } }) {
             {gameWon && (
               <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
                 <div className="text-center p-6 bg-gray-800 rounded-lg">
-                  <h2 className="text-2xl font-bold mb-4">🎉 通关成功！</h2>
-                  <p className="mb-4">总步数: {steps}</p>
+                  <h2 className="text-2xl font-bold mb-4">{t('congratulations')}</h2>
+                  <p className="mb-4">{t('totalSteps')}: {steps}</p>
                   <Link href="/levels" className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">
-                    返回关卡选择
+                    {t('backToLevels')}
                   </Link>
                 </div>
               </div>
