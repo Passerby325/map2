@@ -37,7 +37,7 @@ const generateMaze = (size: number) => {
   const start = { x: 1, y: 1 }
   const end = { x: size - 2, y: size - 2 }
   
-  // 递归生成迷宫
+  // 使用深度优先搜索生成迷宫
   const carve = (x: number, y: number) => {
     const directions = [
       [0, -2], // 上
@@ -67,32 +67,26 @@ const generateMaze = (size: number) => {
   // 从起点开始生成迷宫
   carve(start.x, start.y)
   
-  // 确保终点可达
-  const ensurePathToEnd = () => {
-    let currentX = end.x
-    let currentY = end.y
+  // 确保终点可达（只生成一条路径）
+  let currentX = end.x
+  let currentY = end.y
+  
+  while (maze[currentY][currentX] === 1) {
+    maze[currentY][currentX] = 0
     
-    while (currentX > 1 || currentY > 1) {
-      maze[currentY][currentX] = 0
-      
-      if (Math.random() < 0.5 && currentX > 1) {
-        maze[currentY][currentX - 1] = 0
-        currentX -= 2
-      } else if (currentY > 1) {
-        maze[currentY - 1][currentX] = 0
-        currentY -= 2
-      }
-    }
-  }
-  
-  ensurePathToEnd()
-  
-  // 添加一些随机通道
-  for (let i = 0; i < size/2; i++) {
-    const x = 1 + Math.floor(Math.random() * (size - 2))
-    const y = 1 + Math.floor(Math.random() * (size - 2))
-    if (maze[y][x] === 1) {
-      maze[y][x] = 0
+    // 总是尝试向左或向上移动，确保路径不会重叠
+    if (currentX > 1 && maze[currentY][currentX - 2] === 0) {
+      maze[currentY][currentX - 1] = 0
+      currentX -= 2
+    } else if (currentY > 1 && maze[currentY - 2][currentX] === 0) {
+      maze[currentY - 1][currentX] = 0
+      currentY -= 2
+    } else if (currentX > 1) {
+      maze[currentY][currentX - 1] = 0
+      currentX -= 2
+    } else {
+      maze[currentY - 1][currentX] = 0
+      currentY -= 2
     }
   }
   
