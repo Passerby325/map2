@@ -5,11 +5,9 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import VolumeControl from "../components/VolumeControl"
 import { useAudio } from "../contexts/AudioContext"
-import { useLanguage } from "../contexts/LanguageContext"
 
 export default function Home() {
   const { isPlaying, togglePlay } = useAudio()
-  const { t, toggleLanguage, language } = useLanguage()
 
   return (
     <div className="relative h-screen w-full overflow-hidden flex flex-col justify-between">
@@ -31,7 +29,7 @@ export default function Home() {
         className="relative z-10 text-center pt-20 sm:pt-32 md:pt-40"
       >
         <h1 className="text-6xl sm:text-7xl md:text-8xl font-bold text-white shadow-lg mb-4">Map</h1>
-        <p className="text-xl sm:text-2xl text-gray-200">{t('exploreTheMaze')}</p>
+        <p className="text-xl sm:text-2xl text-gray-200">探索迷宫的奥秘</p>
       </motion.div>
 
       <motion.div
@@ -40,33 +38,23 @@ export default function Home() {
         transition={{ duration: 1, delay: 0.5 }}
         className="relative z-10 flex flex-col items-center space-y-4 pb-20 sm:pb-32"
       >
-        {/* 语言切换按钮 */}
-        <button
-          onClick={toggleLanguage}
-          className="px-6 py-3 bg-blue-600 text-white text-lg font-semibold rounded-full shadow-lg hover:bg-blue-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
-        >
-          {language === 'en' ? '切换到中文' : 'Switch to English'}
-        </button>
-
         <button
           onClick={togglePlay}
           className="px-6 py-3 bg-green-500 text-white text-lg font-semibold rounded-full shadow-lg hover:bg-green-600 transition duration-300 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50"
         >
-          {isPlaying ? t('pauseMusic') : t('playMusic')}
+          {isPlaying ? "暂停背景音乐" : "开始背景音乐"}
         </button>
-
         <Link
           href="/levels"
           className="px-8 py-4 bg-blue-600 text-white text-xl font-semibold rounded-full shadow-lg hover:bg-blue-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
         >
-          {t('enterLevels')}
+          进入关卡
         </Link>
-
         <Link
           href="/credits"
           className="px-8 py-4 bg-purple-600 text-white text-xl font-semibold rounded-full shadow-lg hover:bg-purple-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50"
         >
-          {t('credits')}
+          制作详情
         </Link>
       </motion.div>
 
