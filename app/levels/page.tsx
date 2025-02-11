@@ -39,13 +39,6 @@ export default function Levels() {
       />
 
       <div className="relative z-10 max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <button
-          onClick={toggleLanguage}
-          className="absolute top-4 right-4 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
-        >
-          {language === 'zh' ? 'EN' : '中文'}
-        </button>
-
         <motion.h1
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -88,12 +81,12 @@ export default function Levels() {
           className="mt-12 text-center"
         >
           <Link href="/" className="text-blue-400 hover:text-blue-300 transition duration-300 text-lg">
-            返回主页
+            {t('backToHome')}
           </Link>
         </motion.div>
       </div>
 
-      <div className="absolute top-4 right-4 space-y-2">
+      <div className="fixed top-4 right-4 space-y-2">
         <VolumeControl type="music" initialVolume={0.5} />
         <VolumeControl type="sound" initialVolume={0.5} />
       </div>

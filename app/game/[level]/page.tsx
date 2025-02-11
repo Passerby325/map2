@@ -109,6 +109,9 @@ const VISIBLE_RADIUS = 4
 
 export default function Game({ params }: { params: { level: string } }) {
   const { t, toggleLanguage, language } = useLanguage()
+  const [isBlindMode, setIsBlindMode] = useState(false)
+  const [showBlindModeDialog, setShowBlindModeDialog] = useState(false)
+  const [tempVisibility, setTempVisibility] = useState<'normal' | 'flash' | 'godEye'>('normal')
   
   // 添加调试日志
   console.log('Current language:', language)
@@ -133,18 +136,47 @@ export default function Game({ params }: { params: { level: string } }) {
   }
 
   const updateVisibility = () => {
-    const newGameState = maze.map(row => [...row]);
-    for (let y = 0; y < mazeSize; y++) {
-      for (let x = 0; x < mazeSize; x++) {
-        const distance = Math.sqrt(
-          Math.pow(y - playerPos.y, 2) + 
-          Math.pow(x - playerPos.x, 2)
-        );
-        newGameState[y][x] = distance <= VISIBLE_RADIUS ? maze[y][x] : -1;
+    const newGameState = maze.map(row => [...row])
+    
+    if (!gameStarted) {
+      // 游戏未开始时显示全图
+      newGameState[playerPos.y][playerPos.x] = PLAYER
+    } else if (isBlindMode) {
+      // 盲人模式
+      for (let y = 0; y < mazeSize; y++) {
+        for (let x = 0; x < mazeSize; x++) {
+          const distance = Math.sqrt(
+            Math.pow(y - playerPos.y, 2) + 
+            Math.pow(x - playerPos.x, 2)
+          )
+          
+          if (tempVisibility === 'godEye') {
+            // 天眼模式显示全图
+            newGameState[y][x] = maze[y][x]
+          } else if (tempVisibility === 'flash') {
+            // 灵光一现模式
+            newGameState[y][x] = distance <= 5 ? maze[y][x] : -1
+          } else {
+            // 普通盲人模式只显示玩家
+            newGameState[y][x] = distance <= 0 ? maze[y][x] : -1
+          }
+        }
+      }
+    } else {
+      // 正常模式
+      for (let y = 0; y < mazeSize; y++) {
+        for (let x = 0; x < mazeSize; x++) {
+          const distance = Math.sqrt(
+            Math.pow(y - playerPos.y, 2) + 
+            Math.pow(x - playerPos.x, 2)
+          )
+          newGameState[y][x] = distance <= VISIBLE_RADIUS ? maze[y][x] : -1
+        }
       }
     }
-    newGameState[playerPos.y][playerPos.x] = PLAYER;
-    setGameState(newGameState);
+    
+    newGameState[playerPos.y][playerPos.x] = PLAYER
+    setGameState(newGameState)
     
     // 检查胜利条件
     if(playerPos.x === mazeSize-2 && playerPos.y === mazeSize-2) {
@@ -153,12 +185,13 @@ export default function Game({ params }: { params: { level: string } }) {
   }
 
   const move = (dx: number, dy: number) => {
-    if(gameWon) return;
-    const newX = playerPos.x + dx;
-    const newY = playerPos.y + dy;
-    if(maze[newY]?.[newX] === 0 || maze[newY]?.[newX] === 2) {
-      setPlayerPos({ x: newX, y: newY });
-      setSteps(prev => prev + 1);  // 增加步数
+    if (gameWon) return
+    const newX = playerPos.x + dx
+    const newY = playerPos.y + dy
+    if (maze[newY]?.[newX] === 0 || maze[newY]?.[newX] === 2) {
+      setPlayerPos({ x: newX, y: newY })
+      setSteps(prev => prev + 1)
+      setTempVisibility('normal') // 移动后重置临时可见性
     }
   }
 
@@ -186,39 +219,67 @@ export default function Game({ params }: { params: { level: string } }) {
         <div className="flex-1 flex items-center justify-center gap-8 max-h-[calc(100vh-200px)]">
           {/* 左侧控制区 */}
           <div className="flex-none flex flex-col gap-4">
+            {!gameStarted && (
+              <button
+                onClick={() => setShowBlindModeDialog(true)}
+                className="w-48 py-4 bg-purple-600 rounded-lg hover:bg-purple-700 text-xl mb-4"
+              >
+                {t('blindMode')}
+              </button>
+            )}
+
             {gameStarted ? (
-              <div className="grid grid-cols-3 gap-4 w-48">
-                <div className="col-start-2">
-                  <button 
-                    onClick={() => move(0, -1)}
-                    className="w-full py-4 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
-                  >
-                    {t('up')}
-                  </button>
+              <>
+                <div className="grid grid-cols-3 gap-4 w-48">
+                  <div className="col-start-2">
+                    <button 
+                      onClick={() => move(0, -1)}
+                      className="w-full py-4 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
+                    >
+                      {t('up')}
+                    </button>
+                  </div>
+                  <div className="flex gap-4 col-span-3 justify-center">
+                    <button
+                      onClick={() => move(-1, 0)}
+                      className="py-4 px-8 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
+                    >
+                      {t('left')}
+                    </button>
+                    <button
+                      onClick={() => move(1, 0)}
+                      className="py-4 px-8 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
+                    >
+                      {t('right')}
+                    </button>
+                  </div>
+                  <div className="col-start-2">
+                    <button
+                      onClick={() => move(0, 1)}
+                      className="w-full py-4 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
+                    >
+                      {t('down')}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-4 col-span-3 justify-center">
-                  <button
-                    onClick={() => move(-1, 0)}
-                    className="py-4 px-8 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
-                  >
-                    {t('left')}
-                  </button>
-                  <button
-                    onClick={() => move(1, 0)}
-                    className="py-4 px-8 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
-                  >
-                    {t('right')}
-                  </button>
-                </div>
-                <div className="col-start-2">
-                  <button
-                    onClick={() => move(0, 1)}
-                    className="w-full py-4 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
-                  >
-                    {t('down')}
-                  </button>
-                </div>
-              </div>
+                
+                {isBlindMode && (
+                  <div className="flex flex-col gap-2 mt-4">
+                    <button
+                      onClick={() => setTempVisibility('flash')}
+                      className="w-48 py-2 bg-yellow-600 rounded-lg hover:bg-yellow-700"
+                    >
+                      {t('flash')}
+                    </button>
+                    <button
+                      onClick={() => setTempVisibility('godEye')}
+                      className="w-48 py-2 bg-purple-600 rounded-lg hover:bg-purple-700"
+                    >
+                      {t('godEye')}
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <motion.button
                 onClick={startGame}
@@ -227,16 +288,6 @@ export default function Game({ params }: { params: { level: string } }) {
                 {t('startGame')}
               </motion.button>
             )}
-
-            {/* 制作详情按钮 */}
-            <div className="flex flex-col gap-2 mt-4">
-              <Link 
-                href="/credits" 
-                className="w-48 py-2 bg-gray-700 text-center rounded-lg hover:bg-gray-600 transition-colors"
-              >
-                {t('credits')}
-              </Link>
-            </div>
           </div>
 
           {/* 右侧迷宫区域 */}
@@ -276,6 +327,33 @@ export default function Game({ params }: { params: { level: string } }) {
           </div>
         </div>
       </div>
+
+      {/* 盲人模式确认对话框 */}
+      {showBlindModeDialog && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-gray-800 p-6 rounded-lg max-w-md">
+            <h2 className="text-xl font-bold mb-4">{t('blindMode')}</h2>
+            <p className="mb-6">{t('blindModeDesc')}</p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowBlindModeDialog(false)}
+                className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                onClick={() => {
+                  setIsBlindMode(true)
+                  setShowBlindModeDialog(false)
+                }}
+                className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+              >
+                {t('confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="fixed top-4 right-4 space-y-2">
         <VolumeControl type="music" initialVolume={0.5} />

@@ -31,6 +31,12 @@ const translations = {
     'right': '右',
     'credits': '制作详情',
     'language': '语言',
+    'blindMode': '盲人模式',
+    'blindModeDesc': '盲人模式中，开始游戏后，玩家只能看见玩家自己。能使用"灵光一现！"按钮显示玩家周围5个的距离，直到玩家下一步移动。能使用"天眼，开！！！"按钮显示整个地图，直到玩家下一步移动。',
+    'confirm': '确认',
+    'cancel': '返回',
+    'flash': '灵光一现！',
+    'godEye': '天眼，开！！！',
   },
   en: {
     'selectLevel': 'Select Level',
@@ -52,6 +58,12 @@ const translations = {
     'right': 'Right',
     'credits': 'Credits',
     'language': 'Language',
+    'blindMode': 'Blind Mode',
+    'blindModeDesc': 'In blind mode, players can only see themselves after starting the game. Use "Flash!" to see within 5 blocks until next move. Use "God\'s Eye!" to see the entire map until next move.',
+    'confirm': 'Confirm',
+    'cancel': 'Back',
+    'flash': 'Flash!',
+    'godEye': 'God\'s Eye!',
   }
 }
 
