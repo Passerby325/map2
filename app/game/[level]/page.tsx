@@ -37,21 +37,60 @@ const generateMaze = (size: number) => {
   const start = { x: 1, y: 1 }
   const end = { x: size - 2, y: size - 2 }
   
-  // 使用深度优先搜索生成迷宫，添加更多死胡同
-  const carve = (x: number, y: number, isMainPath = false) => {
-    const directions = [
-      [0, -2], // 上
-      [2, 0],  // 右
-      [0, 2],  // 下
-      [-2, 0]  // 左
-    ].sort(() => Math.random() - 0.5)
+  // 生成复杂的主路径
+  const generateMainPath = () => {
+    const path: [number, number][] = [[start.x, start.y]]
+    let currentX = start.x
+    let currentY = start.y
+    maze[currentY][currentX] = 0
     
-    maze[y][x] = 0
-    
-    // 如果不是主路径，增加生成死胡同的概率
-    if (!isMainPath && Math.random() < 0.7) {
-      return
+    // 在到达终点前，随机游走
+    while (currentX !== end.x || currentY !== end.y) {
+      const possibleMoves = []
+      
+      // 收集所有可能的移动方向
+      if (currentX < end.x && currentX + 2 < size - 1 && maze[currentY][currentX + 2] === 1) 
+        possibleMoves.push([2, 0])
+      if (currentY < end.y && currentY + 2 < size - 1 && maze[currentY + 2][currentX] === 1) 
+        possibleMoves.push([0, 2])
+      if (currentX > 1 && maze[currentY][currentX - 2] === 1) 
+        possibleMoves.push([-2, 0])
+      if (currentY > 1 && maze[currentY - 2][currentX] === 1) 
+        possibleMoves.push([0, -2])
+      
+      // 如果没有可用移动，回溯到上一个有其他选择的点
+      if (possibleMoves.length === 0) {
+        for (let i = path.length - 1; i >= 0; i--) {
+          [currentX, currentY] = path[i]
+          const backtrackMoves = []
+          if (currentX < end.x && currentX + 2 < size - 1 && maze[currentY][currentX + 2] === 1) 
+            backtrackMoves.push([2, 0])
+          if (currentY < end.y && currentY + 2 < size - 1 && maze[currentY + 2][currentX] === 1) 
+            backtrackMoves.push([0, 2])
+          if (backtrackMoves.length > 0) {
+            possibleMoves.push(...backtrackMoves)
+            break
+          }
+        }
+      }
+      
+      // 选择一个移动方向，优先向终点方向移动
+      const [dx, dy] = possibleMoves[Math.floor(Math.random() * possibleMoves.length)]
+      maze[currentY + dy/2][currentX + dx/2] = 0
+      currentX += dx
+      currentY += dy
+      maze[currentY][currentX] = 0
+      path.push([currentX, currentY])
     }
+    
+    return path
+  }
+  
+  // 生成迷惑性路径
+  const generateDeceptivePaths = (x: number, y: number) => {
+    const directions = [
+      [0, -2], [2, 0], [0, 2], [-2, 0]
+    ].sort(() => Math.random() - 0.5)
     
     for (const [dx, dy] of directions) {
       const newX = x + dx
@@ -62,37 +101,34 @@ const generateMaze = (size: number) => {
         newY > 0 && newY < size - 1 &&
         maze[newY][newX] === 1
       ) {
-        maze[y + dy/2][x + dx/2] = 0
-        maze[newY][newX] = 0
-        carve(newX, newY, false) // 递归时标记为非主路径
+        // 70%概率继续延伸路径
+        if (Math.random() < 0.7) {
+          maze[y + dy/2][x + dx/2] = 0
+          maze[newY][newX] = 0
+          generateDeceptivePaths(newX, newY)
+        }
       }
     }
   }
   
-  // 先生成到终点的主路径
-  let currentX = start.x
-  let currentY = start.y
-  const path: [number, number][] = []
+  // 先生成主路径
+  const mainPath = generateMainPath()
   
-  while (currentX !== end.x || currentY !== end.y) {
-    maze[currentY][currentX] = 0
-    path.push([currentX, currentY])
-    
-    if (currentX < end.x && maze[currentY][currentX + 2] === 1) {
-      maze[currentY][currentX + 1] = 0
-      currentX += 2
-    } else if (currentY < end.y && maze[currentY + 2][currentX] === 1) {
-      maze[currentY + 1][currentX] = 0
-      currentY += 2
-    }
-  }
-  
-  // 从主路径的每个点生成分支
-  path.forEach(([x, y]) => {
-    if (Math.random() < 0.8) { // 80%的概率生成分支
-      carve(x, y, false)
+  // 从主路径上的点生成迷惑性路径
+  mainPath.forEach(([x, y]) => {
+    if (Math.random() < 0.4) { // 40%概率从这个点生成分支
+      generateDeceptivePaths(x, y)
     }
   })
+  
+  // 在空余的地方随机生成一些独立的路径
+  for (let i = 0; i < size/2; i++) {
+    const x = 1 + Math.floor(Math.random() * (size - 2))
+    const y = 1 + Math.floor(Math.random() * (size - 2))
+    if (maze[y][x] === 1 && Math.random() < 0.3) {
+      generateDeceptivePaths(x, y)
+    }
+  }
   
   // 设置起点和终点
   maze[start.y][start.x] = 0
