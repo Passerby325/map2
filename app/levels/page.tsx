@@ -5,8 +5,11 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import LevelButton from "../../components/LevelButton"
 import VolumeControl from "../../components/VolumeControl"
+import { useLanguage } from "../../contexts/LanguageContext"
 
 export default function Levels() {
+  const { t, toggleLanguage, language } = useLanguage()
+
   const levels = [
     { id: 1, difficulty: "简单" },
     { id: 2, difficulty: "简单" },
@@ -36,24 +39,34 @@ export default function Levels() {
       />
 
       <div className="relative z-10 max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <button
+          onClick={toggleLanguage}
+          className="absolute top-4 right-4 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+        >
+          {language === 'zh' ? 'EN' : '中文'}
+        </button>
+
         <motion.h1
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="text-5xl font-bold text-center mb-12 text-white"
         >
-          选择关卡
+          {t('selectLevel')}
         </motion.h1>
 
-        {/* 难度分组显示 */}
-        {["简单", "中等", "困难"].map((difficulty) => (
-          <div key={difficulty} className="mb-12">
+        {[
+          { key: 'easy', text: t('easy') },
+          { key: 'medium', text: t('medium') },
+          { key: 'hard', text: t('hard') }
+        ].map(({ key, text }) => (
+          <div key={key} className="mb-12">
             <h2 className="text-2xl font-bold text-white mb-6 text-center">
-              {difficulty}难度
+              {text}{t('difficulty')}
             </h2>
             <motion.div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-6 max-w-6xl mx-auto">
               {levels
-                .filter(level => level.difficulty === difficulty)
+                .filter(level => level.difficulty === text)
                 .map((level) => (
                   <motion.div
                     key={level.id}
@@ -61,7 +74,7 @@ export default function Levels() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.3, delay: level.id * 0.1 }}
                   >
-                    <LevelButton level={level.id} difficulty={difficulty} />
+                    <LevelButton level={level.id} difficulty={text} />
                   </motion.div>
                 ))}
             </motion.div>

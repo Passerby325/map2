@@ -4,6 +4,7 @@ import "./globals.css"
 import ClickSound from "../components/ClickSound"
 import { AudioProvider } from "../contexts/AudioContext"
 import type React from "react"
+import { LanguageProvider } from "../contexts/LanguageContext"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -20,10 +21,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AudioProvider>
-          {children}
-          <ClickSound />
-        </AudioProvider>
+        <LanguageProvider>
+          <AudioProvider>
+            {children}
+            <ClickSound />
+          </AudioProvider>
+        </LanguageProvider>
       </body>
     </html>
   )

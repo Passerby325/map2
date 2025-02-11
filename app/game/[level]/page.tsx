@@ -162,99 +162,105 @@ export default function Game({ params }: { params: { level: string } }) {
 
   return (
     <div className="min-h-screen bg-gray-900 p-4 text-white">
-      <div className="max-w-4xl mx-auto">
-        <motion.h1 className="text-3xl font-bold text-center mb-6">
-          {params.level === "random" ? "随机关卡" : `关卡 ${params.level}`}
-        </motion.h1>
-        
-        <div className="text-center mb-4">
-          <span className="bg-blue-600 px-4 py-2 rounded-full">
-            步数: {steps}
-          </span>
-        </div>
-
-        <div className="relative mb-8">
-          <div className="grid place-items-center">
-            {gameState.map((row, y) => (
-              <div key={y} className="flex">
-                {row.map((cell, x) => (
-                  <motion.div
-                    key={`${x}-${y}`}
-                    className={`
-                      ${mazeSize <= 15 ? 'w-8 h-8' : 'w-6 h-6'}
-                      ${cell === 1 ? 'bg-gray-800' : 'bg-gray-100'}
-                      ${cell === PLAYER ? 'bg-red-500 rounded-full' : ''}
-                      ${cell === -1 ? 'bg-gray-900' : ''}
-                      ${cell === 2 ? 'bg-green-500' : ''}
-                      ${
-                        cell !== 1 ? 
-                        'border-transparent' : 
-                        'border-gray-900 border'
-                      }
-                      transition-colors
-                    `}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
+      <div className="h-screen flex flex-col">
+        {/* 顶部标题和步数 */}
+        <div className="flex-none">
+          <motion.h1 className="text-3xl font-bold text-center mb-4">
+            {params.level === "random" ? "随机关卡" : `关卡 ${params.level}`}
+          </motion.h1>
           
-          {gameWon && (
-            <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
-              <div className="text-center p-6 bg-gray-800 rounded-lg">
-                <h2 className="text-2xl font-bold mb-4">🎉 通关成功！</h2>
-                <p className="mb-4">总步数: {steps}</p>
-                <Link href="/levels" className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">
-                  返回关卡选择
-                </Link>
-              </div>
-            </div>
-          )}
+          <div className="text-center mb-4">
+            <span className="bg-blue-600 px-4 py-2 rounded-full">
+              步数: {steps}
+            </span>
+          </div>
         </div>
 
-        {!gameStarted ? (
-          <motion.button
-            onClick={startGame}
-            className="w-full py-3 bg-green-600 rounded-lg hover:bg-green-700"
-          >
-            开始游戏
-          </motion.button>
-        ) : (
-          <div className="grid grid-cols-3 gap-4 max-w-xs mx-auto">
-            <div className="col-start-2">
-              <button 
-                onClick={() => move(0, -1)}
-                className="w-full py-3 bg-blue-600 rounded-full hover:bg-blue-700"
+        {/* 主要游戏区域 */}
+        <div className="flex-1 flex items-center justify-center gap-8 max-h-[calc(100vh-200px)]">
+          {/* 左侧控制区 */}
+          <div className="flex-none">
+            {gameStarted ? (
+              <div className="grid grid-cols-3 gap-4 w-48">
+                <div className="col-start-2">
+                  <button 
+                    onClick={() => move(0, -1)}
+                    className="w-full py-4 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
+                  >
+                    ↑
+                  </button>
+                </div>
+                <div className="flex gap-4 col-span-3 justify-center">
+                  <button
+                    onClick={() => move(-1, 0)}
+                    className="py-4 px-8 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
+                  >
+                    ←
+                  </button>
+                  <button
+                    onClick={() => move(1, 0)}
+                    className="py-4 px-8 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
+                  >
+                    →
+                  </button>
+                </div>
+                <div className="col-start-2">
+                  <button
+                    onClick={() => move(0, 1)}
+                    className="w-full py-4 bg-blue-600 rounded-full hover:bg-blue-700 text-2xl"
+                  >
+                    ↓
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <motion.button
+                onClick={startGame}
+                className="w-48 py-4 bg-green-600 rounded-lg hover:bg-green-700 text-xl"
               >
-                ↑
-              </button>
-            </div>
-            <div className="flex gap-4 col-span-3 justify-center">
-              <button
-                onClick={() => move(-1, 0)}
-                className="py-3 px-6 bg-blue-600 rounded-full hover:bg-blue-700"
-              >
-                ←
-              </button>
-              <button
-                onClick={() => move(1, 0)}
-                className="py-3 px-6 bg-blue-600 rounded-full hover:bg-blue-700"
-              >
-                →
-              </button>
-            </div>
-            <div className="col-start-2">
-              <button
-                onClick={() => move(0, 1)}
-                className="w-full py-3 bg-blue-600 rounded-full hover:bg-blue-700"
-              >
-                ↓
-              </button>
-            </div>
+                开始游戏
+              </motion.button>
+            )}
           </div>
-        )}
+
+          {/* 右侧迷宫区域 */}
+          <div className="flex-none relative">
+            <div className="grid place-items-center">
+              {gameState.map((row, y) => (
+                <div key={y} className="flex">
+                  {row.map((cell, x) => (
+                    <motion.div
+                      key={`${x}-${y}`}
+                      className={`
+                        ${mazeSize <= 15 ? 'w-7 h-7' : 'w-5 h-5'}
+                        ${cell === 1 ? 'bg-gray-800' : 'bg-gray-100'}
+                        ${cell === PLAYER ? 'bg-red-500 rounded-full' : ''}
+                        ${cell === -1 ? 'bg-gray-900' : ''}
+                        ${cell === 2 ? 'bg-green-500' : ''}
+                        ${cell !== 1 ? 'border-transparent' : 'border-gray-900 border'}
+                        transition-colors
+                      `}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+            
+            {gameWon && (
+              <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+                <div className="text-center p-6 bg-gray-800 rounded-lg">
+                  <h2 className="text-2xl font-bold mb-4">🎉 通关成功！</h2>
+                  <p className="mb-4">总步数: {steps}</p>
+                  <Link href="/levels" className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">
+                    返回关卡选择
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-      
+
       <div className="fixed top-4 right-4 space-y-2">
         <VolumeControl type="music" initialVolume={0.5} />
         <VolumeControl type="sound" initialVolume={0.5} />
