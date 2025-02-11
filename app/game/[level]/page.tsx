@@ -37,8 +37,8 @@ const generateMaze = (size: number) => {
   const start = { x: 1, y: 1 }
   const end = { x: size - 2, y: size - 2 }
   
-  // 使用深度优先搜索生成迷宫
-  const carve = (x: number, y: number) => {
+  // 使用深度优先搜索生成迷宫，添加更多死胡同
+  const carve = (x: number, y: number, isMainPath = false) => {
     const directions = [
       [0, -2], // 上
       [2, 0],  // 右
@@ -47,6 +47,11 @@ const generateMaze = (size: number) => {
     ].sort(() => Math.random() - 0.5)
     
     maze[y][x] = 0
+    
+    // 如果不是主路径，增加生成死胡同的概率
+    if (!isMainPath && Math.random() < 0.7) {
+      return
+    }
     
     for (const [dx, dy] of directions) {
       const newX = x + dx
@@ -59,36 +64,35 @@ const generateMaze = (size: number) => {
       ) {
         maze[y + dy/2][x + dx/2] = 0
         maze[newY][newX] = 0
-        carve(newX, newY)
+        carve(newX, newY, false) // 递归时标记为非主路径
       }
     }
   }
   
-  // 从起点开始生成迷宫
-  carve(start.x, start.y)
+  // 先生成到终点的主路径
+  let currentX = start.x
+  let currentY = start.y
+  const path: [number, number][] = []
   
-  // 确保终点可达（只生成一条路径）
-  let currentX = end.x
-  let currentY = end.y
-  
-  while (maze[currentY][currentX] === 1) {
+  while (currentX !== end.x || currentY !== end.y) {
     maze[currentY][currentX] = 0
+    path.push([currentX, currentY])
     
-    // 总是尝试向左或向上移动，确保路径不会重叠
-    if (currentX > 1 && maze[currentY][currentX - 2] === 0) {
-      maze[currentY][currentX - 1] = 0
-      currentX -= 2
-    } else if (currentY > 1 && maze[currentY - 2][currentX] === 0) {
-      maze[currentY - 1][currentX] = 0
-      currentY -= 2
-    } else if (currentX > 1) {
-      maze[currentY][currentX - 1] = 0
-      currentX -= 2
-    } else {
-      maze[currentY - 1][currentX] = 0
-      currentY -= 2
+    if (currentX < end.x && maze[currentY][currentX + 2] === 1) {
+      maze[currentY][currentX + 1] = 0
+      currentX += 2
+    } else if (currentY < end.y && maze[currentY + 2][currentX] === 1) {
+      maze[currentY + 1][currentX] = 0
+      currentY += 2
     }
   }
+  
+  // 从主路径的每个点生成分支
+  path.forEach(([x, y]) => {
+    if (Math.random() < 0.8) { // 80%的概率生成分支
+      carve(x, y, false)
+    }
+  })
   
   // 设置起点和终点
   maze[start.y][start.x] = 0
@@ -369,4 +373,5 @@ export default function Game({ params }: { params: { level: string } }) {
     </div>
   )
 }
+
 
