@@ -138,10 +138,7 @@ export default function Game({ params }: { params: { level: string } }) {
   const updateVisibility = () => {
     const newGameState = maze.map(row => [...row])
     
-    if (!gameStarted) {
-      // 游戏未开始时显示全图
-      newGameState[playerPos.y][playerPos.x] = PLAYER
-    } else if (isBlindMode) {
+    if (isBlindMode) {
       // 盲人模式
       for (let y = 0; y < mazeSize; y++) {
         for (let x = 0; x < mazeSize; x++) {
@@ -196,8 +193,10 @@ export default function Game({ params }: { params: { level: string } }) {
   }
 
   useEffect(() => {
-    if(gameStarted) updateVisibility();
-  }, [playerPos, gameStarted]);
+    if (gameStarted) {
+      updateVisibility();
+    }
+  }, [tempVisibility, gameStarted]);
 
   return (
     <div className="min-h-screen bg-gray-900 p-4 text-white">
