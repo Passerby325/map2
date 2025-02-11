@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import VolumeControl from "../../../components/VolumeControl"
@@ -98,7 +98,7 @@ const generateMaze = (size: number) => {
       
       // 如果有可选的新路径，有一定概率选择
       if (choices.length > 0 && Math.random() < 0.3) {
-        const [, dx, dy] = choices[Math.floor(Math.random() * choices.length)]
+        const [, dx, dy] = choices[Math.floor(Math.random() * choices.length)] as [string, number, number]
         maze[currentY + dy/2][currentX + dx/2] = 0
         currentX += dx
         currentY += dy
@@ -158,47 +158,21 @@ export default function Game({ params }: { params: { level: string } }) {
   const [isBlindMode, setIsBlindMode] = useState(false)
   const [showBlindModeDialog, setShowBlindModeDialog] = useState(false)
   const [tempVisibility, setTempVisibility] = useState<'normal' | 'flash' | 'godEye'>('normal')
-  
-  // 添加调试日志
-  console.log('Current language:', language)
-  
   const mazeSize = getMazeSize(params.level)
   const [maze] = useState(() => generateMaze(mazeSize))
   const [gameState, setGameState] = useState(maze)
   const [playerPos, setPlayerPos] = useState({ x: 1, y: 1 })
   const [gameStarted, setGameStarted] = useState(false)
   const [gameWon, setGameWon] = useState(false)
-  const [steps, setSteps] = useState(0)  // 添加步数统计
+  const [steps, setSteps] = useState(0)
   const [flashCount, setFlashCount] = useState(0)
   const [godEyeCount, setGodEyeCount] = useState(0)
 
-  useEffect(() => {
-    if (gameStarted) {
-      updateVisibility();
-      // 检查胜利条件
-      if (playerPos.x === mazeSize - 2 && playerPos.y === mazeSize - 2) {
-        setGameWon(true);
-      }
-    }
-  }, [playerPos, gameStarted]);
-
-  useEffect(() => {
-    // 游戏开始前也要显示玩家
-    const newGameState = maze.map(row => [...row])
-    newGameState[playerPos.y][playerPos.x] = PLAYER
-    setGameState(newGameState)
-  }, []);
-
-  const startGame = () => {
-    setGameStarted(true);
-    updateVisibility();
-  }
-
-  const updateVisibility = () => {
+  // 更新可见性的函数
+  const updateVisibility = useCallback(() => {
     const newGameState = maze.map(row => [...row])
     
     if (isBlindMode && gameStarted) {
-      // 盲人模式且游戏已开始
       for (let y = 0; y < mazeSize; y++) {
         for (let x = 0; x < mazeSize; x++) {
           const distance = Math.sqrt(
@@ -207,26 +181,20 @@ export default function Game({ params }: { params: { level: string } }) {
           )
           
           if (tempVisibility === 'godEye') {
-            // 天眼模式显示全图
             newGameState[y][x] = maze[y][x]
           } else if (tempVisibility === 'flash') {
-            // 灵光一现模式
             newGameState[y][x] = distance <= 5 ? maze[y][x] : -1
           } else {
-            // 普通盲人模式只显示玩家
             newGameState[y][x] = distance <= 0 ? maze[y][x] : -1
           }
         }
       }
     } else {
-      // 正常模式或游戏未开始
       for (let y = 0; y < mazeSize; y++) {
         for (let x = 0; x < mazeSize; x++) {
           if (!gameStarted) {
-            // 游戏未开始时显示全图
             newGameState[y][x] = maze[y][x]
           } else {
-            // 游戏开始后显示可见范围
             const distance = Math.sqrt(
               Math.pow(y - playerPos.y, 2) + 
               Math.pow(x - playerPos.x, 2)
@@ -239,24 +207,45 @@ export default function Game({ params }: { params: { level: string } }) {
     
     newGameState[playerPos.y][playerPos.x] = PLAYER
     setGameState(newGameState)
-  }
+  }, [maze, isBlindMode, gameStarted, playerPos, tempVisibility, mazeSize])
 
-  const move = (dx: number, dy: number) => {
+  // 初始化游戏状态
+  useEffect(() => {
+    updateVisibility()
+  }, [])
+
+  // 监听玩家位置变化
+  useEffect(() => {
+    if (gameStarted) {
+      updateVisibility()
+      if (playerPos.x === mazeSize - 2 && playerPos.y === mazeSize - 2) {
+        setGameWon(true)
+      }
+    }
+  }, [playerPos, gameStarted, updateVisibility, mazeSize])
+
+  // 监听临时可见性变化
+  useEffect(() => {
+    if (gameStarted && tempVisibility !== 'normal') {
+      updateVisibility()
+    }
+  }, [tempVisibility, gameStarted, updateVisibility])
+
+  const move = useCallback((dx: number, dy: number) => {
     if (gameWon) return
     const newX = playerPos.x + dx
     const newY = playerPos.y + dy
     if (maze[newY]?.[newX] === 0 || maze[newY]?.[newX] === 2) {
       setPlayerPos({ x: newX, y: newY })
       setSteps(prev => prev + 1)
-      setTempVisibility('normal') // 移动后重置临时可见性
+      setTempVisibility('normal')
     }
-  }
+  }, [maze, playerPos, gameWon])
 
-  useEffect(() => {
-    if (gameStarted && tempVisibility !== 'normal') {
-      updateVisibility();
-    }
-  }, [tempVisibility]);
+  const startGame = useCallback(() => {
+    setGameStarted(true)
+    updateVisibility()
+  }, [updateVisibility])
 
   return (
     <div className="min-h-screen bg-gray-900 p-4 text-white">
