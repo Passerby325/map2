@@ -27,69 +27,101 @@ const seededRandom = (seed: number) => {
   }
 }
 
-// 修改迷宫生成算法，添加种子参数
+// 添加安全的数组访问函数
+const safeGet = (arr: number[][] | undefined, y: number, x: number, defaultValue = 1): number => {
+  if (!arr || !arr[y]) return defaultValue
+  return arr[y][x] ?? defaultValue
+}
+
+const safeSet = (arr: number[][] | undefined, y: number, x: number, value: number): void => {
+  if (!arr || !arr[y]) return
+  arr[y][x] = value
+}
+
+// 修改迷宫生成算法
 const generateMaze = (size: number, seed: number) => {
-  const random = seededRandom(seed)
-  const validSize = Math.max(10, Math.min(50, Math.floor(size)))
-  const maze = new Array(validSize).fill(0).map(() => new Array(validSize).fill(1))
-  
-  const carve = (x: number, y: number) => {
-    if (x < 1 || x >= validSize - 1 || y < 1 || y >= validSize - 1) return
+  try {
+    // 确保size是有效的数字
+    const validSize = Math.max(10, Math.min(50, Math.floor(size)))
+    if (!validSize || isNaN(validSize)) return Array(10).fill(0).map(() => Array(10).fill(1))
     
-    const directions = [
-      [0, -2], [2, 0], [0, 2], [-2, 0]
-    ].sort(() => random() - 0.5)  // 使用seeded随机数
+    // 创建初始迷宫
+    let maze: number[][] | null = null
+    try {
+      maze = Array.from({ length: validSize }, () => 
+        Array.from({ length: validSize }, () => 1)
+      )
+    } catch (e) {
+      console.error('Failed to create maze:', e)
+      return Array(10).fill(0).map(() => Array(10).fill(1))
+    }
     
-    maze[y][x] = 0
+    if (!maze || !maze[0]) {
+      console.error('Invalid maze creation')
+      return Array(10).fill(0).map(() => Array(10).fill(1))
+    }
+
+    const random = seededRandom(seed || 1)
     
-    for (const [dx, dy] of directions) {
-      const newX = x + dx
-      const newY = y + dy
-      const wallX = x + dx/2
-      const wallY = y + dy/2
+    const carve = (x: number, y: number) => {
+      if (!maze || x < 1 || x >= validSize - 1 || y < 1 || y >= validSize - 1) return
       
-      // 更严格的边界检查
-      if (
-        newX >= 1 && newX < validSize - 1 &&
-        newY >= 1 && newY < validSize - 1 &&
-        maze[newY][newX] === 1
-      ) {
-        // 确保墙的坐标有效
-        if (wallX >= 1 && wallX < validSize - 1 && 
-            wallY >= 1 && wallY < validSize - 1) {
-          maze[wallY][wallX] = 0
-          maze[newY][newX] = 0
-          carve(newX, newY)
+      try {
+        safeSet(maze, y, x, 0)
+        
+        const directions = [
+          [0, -2], [2, 0], [0, 2], [-2, 0]
+        ].sort(() => random() - 0.5)
+        
+        for (const [dx, dy] of directions) {
+          const newX = x + dx
+          const newY = y + dy
+          const wallX = x + dx/2
+          const wallY = y + dy/2
+          
+          if (
+            newX >= 1 && newX < validSize - 1 &&
+            newY >= 1 && newY < validSize - 1 &&
+            safeGet(maze, newY, newX) === 1
+          ) {
+            if (wallX >= 1 && wallX < validSize - 1 && 
+                wallY >= 1 && wallY < validSize - 1) {
+              safeSet(maze, wallY, wallX, 0)
+              safeSet(maze, newY, newX, 0)
+              carve(newX, newY)
+            }
+          }
         }
+      } catch (e) {
+        console.error('Error in carve:', e)
       }
     }
-  }
-  
-  // 从起点开始生成
-  carve(1, 1)
-  
-  // 确保起点和终点及其周围的路径
-  const endX = validSize - 2
-  const endY = validSize - 2
-  
-  // 安全地设置路径
-  const setPath = (x: number, y: number, value: number) => {
-    if (x >= 0 && x < validSize && y >= 0 && y < validSize) {
-      maze[y][x] = value
+    
+    try {
+      carve(1, 1)
+      
+      // 安全地设置路径
+      const endX = validSize - 2
+      const endY = validSize - 2
+      
+      // 创建到终点的通道
+      for (let i = 0; i < 3; i++) {
+        if (endX - i >= 0) safeSet(maze, endY, endX - i, 0)
+        if (endY - i >= 0) safeSet(maze, endY - i, endX, 0)
+      }
+      
+      safeSet(maze, 1, 1, 0)
+      safeSet(maze, endY, endX, 2)
+      
+      return maze
+    } catch (e) {
+      console.error('Error in maze generation:', e)
+      return Array(10).fill(0).map(() => Array(10).fill(1))
     }
+  } catch (e) {
+    console.error('Critical error in generateMaze:', e)
+    return Array(10).fill(0).map(() => Array(10).fill(1))
   }
-  
-  // 创建到终点的通道
-  for (let i = 0; i < 3; i++) {
-    if (endX - i >= 0) setPath(endX - i, endY, 0)
-    if (endY - i >= 0) setPath(endX, endY - i, 0)
-  }
-  
-  // 设置起点和终点
-  setPath(1, 1, 0)
-  setPath(endX, endY, 2)
-  
-  return maze
 }
 
 const PLAYER = 3
@@ -197,33 +229,47 @@ export default function Game({ params }: { params: { level: string } }) {
     updateVisibility();
   }
 
+  // 安全的更新可见性函数
   const updateVisibility = () => {
-    const newGameState = maze.map(row => [...row]);
-    for (let y = 0; y < mazeSize; y++) {
-      for (let x = 0; x < mazeSize; x++) {
-        const distance = Math.sqrt(
-          Math.pow(y - playerPos.y, 2) + 
-          Math.pow(x - playerPos.x, 2)
-        );
-        newGameState[y][x] = distance <= VISIBLE_RADIUS ? maze[y][x] : -1;
-      }
-    }
-    newGameState[playerPos.y][playerPos.x] = PLAYER;
-    setGameState(newGameState);
+    if (!maze || !maze[0]) return
     
-    // 检查胜利条件
-    if(playerPos.x === mazeSize-2 && playerPos.y === mazeSize-2) {
-      setGameWon(true);
+    try {
+      const newGameState = maze.map(row => [...(row || [])])
+      
+      for (let y = 0; y < maze.length; y++) {
+        for (let x = 0; x < (maze[0]?.length || 0); x++) {
+          const distance = Math.sqrt(
+            Math.pow(y - playerPos.y, 2) + 
+            Math.pow(x - playerPos.x, 2)
+          )
+          safeSet(newGameState, y, x, 
+            distance <= VISIBLE_RADIUS ? safeGet(maze, y, x) : -1
+          )
+        }
+      }
+      
+      safeSet(newGameState, playerPos.y, playerPos.x, PLAYER)
+      setGameState(newGameState)
+      
+      if (playerPos.x === maze[0].length - 2 && playerPos.y === maze.length - 2) {
+        setGameWon(true)
+      }
+    } catch (e) {
+      console.error('Error in updateVisibility:', e)
     }
   }
 
+  // 安全的移动函数
   const move = (dx: number, dy: number) => {
-    if(gameWon) return;
-    const newX = playerPos.x + dx;
-    const newY = playerPos.y + dy;
-    if(maze[newY]?.[newX] === 0 || maze[newY]?.[newX] === 2) {
-      setPlayerPos({ x: newX, y: newY });
-      setSteps(prev => prev + 1);  // 增加步数
+    if (gameWon || !maze) return
+    
+    const newX = playerPos.x + dx
+    const newY = playerPos.y + dy
+    
+    const cellValue = safeGet(maze, newY, newX, 1)
+    if (cellValue === 0 || cellValue === 2) {
+      setPlayerPos({ x: newX, y: newY })
+      setSteps(prev => prev + 1)
     }
   }
 
