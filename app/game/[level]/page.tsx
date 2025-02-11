@@ -38,7 +38,7 @@ const generateMaze = (size: number) => {
   const end = { x: size - 2, y: size - 2 }
   
   // 递归生成迷宫
-  const carve = (x: number, y: number) => {
+  const carve = (x: number, y: number, depth = 0) => {
     const directions = [
       [0, -2], // 上
       [2, 0],  // 右
@@ -46,10 +46,11 @@ const generateMaze = (size: number) => {
       [-2, 0]  // 左
     ]
     
-    // 随机打乱方向
+    // 随机打乱方向，但根据深度增加某些方向的权重
     for (let i = directions.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [directions[i], directions[j]] = [directions[j], directions[i]]
+      const weight = Math.random() + (depth % 2 ? 0.3 : 0)
+      const j = Math.floor(weight * (i + 1))
+      ;[directions[i], directions[j]] = [directions[j], directions[i]]
     }
     
     maze[y][x] = 0 // 设置当前位置为路径
@@ -62,12 +63,14 @@ const generateMaze = (size: number) => {
       if (
         newX > 0 && newX < size - 1 &&
         newY > 0 && newY < size - 1 &&
-        maze[newY][newX] === 1
+        maze[newY][newX] === 1 &&
+        // 增加额外的检查以创建更多死胡同
+        Math.random() > depth / (size * 1.5)
       ) {
         // 打通墙壁
         maze[y + dy/2][x + dx/2] = 0
         maze[newY][newX] = 0
-        carve(newX, newY)
+        carve(newX, newY, depth + 1)
       }
     }
   }
@@ -75,17 +78,35 @@ const generateMaze = (size: number) => {
   // 从起点开始生成迷宫
   carve(start.x, start.y)
   
-  // 确保终点可达
+  // 确保终点可达，但路径更曲折
   const ensurePathToEnd = () => {
-    // 从终点向起点方向创建路径
     let currentX = end.x
     let currentY = end.y
+    let attempts = 0
+    const maxAttempts = size * 2
     
-    while (currentX > 1 || currentY > 1) {
+    while ((currentX > 1 || currentY > 1) && attempts < maxAttempts) {
       maze[currentY][currentX] = 0
+      attempts++
       
-      // 随机选择是向左还是向上移动
-      if (Math.random() < 0.5 && currentX > 1) {
+      // 增加路径的随机性
+      const choices = []
+      if (currentX > 1 && maze[currentY][currentX - 2] === 1) choices.push(['left', -2, 0])
+      if (currentY > 1 && maze[currentY - 2][currentX] === 1) choices.push(['up', 0, -2])
+      if (currentX < size - 2 && maze[currentY][currentX + 2] === 1) choices.push(['right', 2, 0])
+      if (currentY < size - 2 && maze[currentY + 2][currentX] === 1) choices.push(['down', 0, 2])
+      
+      // 如果有可选的新路径，有一定概率选择
+      if (choices.length > 0 && Math.random() < 0.3) {
+        const [, dx, dy] = choices[Math.floor(Math.random() * choices.length)]
+        maze[currentY + dy/2][currentX + dx/2] = 0
+        currentX += dx
+        currentY += dy
+        continue
+      }
+      
+      // 否则向起点移动
+      if (Math.random() < 0.6 && currentX > 1) {
         maze[currentY][currentX - 1] = 0
         currentX -= 2
       } else if (currentY > 1) {
@@ -96,6 +117,31 @@ const generateMaze = (size: number) => {
   }
   
   ensurePathToEnd()
+  
+  // 添加一些随机的额外通道，增加复杂性
+  const addExtraPaths = () => {
+    const pathCount = Math.floor(size / 4)
+    for (let i = 0; i < pathCount; i++) {
+      let x = 2 + Math.floor(Math.random() * (size - 4))
+      let y = 2 + Math.floor(Math.random() * (size - 4))
+      if (x % 2 === 0) x--
+      if (y % 2 === 0) y--
+      
+      if (maze[y][x] === 1) {
+        maze[y][x] = 0
+        // 随机打通相邻的一面墙
+        const dx = Math.random() < 0.5 ? 1 : -1
+        const dy = Math.random() < 0.5 ? 1 : -1
+        if (Math.random() < 0.5 && maze[y][x + dx] === 1) {
+          maze[y][x + dx] = 0
+        } else if (maze[y + dy][x] === 1) {
+          maze[y + dy][x] = 0
+        }
+      }
+    }
+  }
+  
+  addExtraPaths()
   
   // 设置起点和终点
   maze[start.y][start.x] = 0
