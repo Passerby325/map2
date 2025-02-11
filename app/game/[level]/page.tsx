@@ -20,17 +20,11 @@ const getMazeSize = (level: string): number => {
 
 // 改进的迷宫生成算法
 const generateMaze = (size: number) => {
-  // 确保size是有效的数字且为奇数（这样能确保有足够的墙壁空间）
+  // 确保size是有效的数字
   const validSize = Math.max(10, Math.min(50, Math.floor(size)))
   
-  // 初始化迷宫，全部设为墙
-  const maze: number[][] = []
-  for (let i = 0; i < validSize; i++) {
-    maze[i] = []
-    for (let j = 0; j < validSize; j++) {
-      maze[i][j] = 1
-    }
-  }
+  // 使用更安全的方式初始化二维数组
+  const maze = new Array(validSize).fill(0).map(() => new Array(validSize).fill(1))
   
   const carve = (x: number, y: number) => {
     // 确保坐标有效
