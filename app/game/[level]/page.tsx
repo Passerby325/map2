@@ -6,7 +6,7 @@ import { motion } from "framer-motion"
 import VolumeControl from "../../../components/VolumeControl"
 import { useLanguage } from "../../../contexts/LanguageContext"
 
-// 修改迷宫大小获取函数
+// 修改迷宫大小获取函数，减小高难度关卡的地图大小
 const getMazeSize = (level: string): number => {
   const sizes = {
     "1": 11,  // 简单
@@ -17,13 +17,13 @@ const getMazeSize = (level: string): number => {
     "6": 17,  // 中等
     "7": 19,
     "8": 19,
-    "9": 21,
-    "10": 21,
-    "11": 23, // 困难
-    "12": 23,
-    "13": 25,
-    "14": 25,
-    "15": 27  // 最难
+    "9": 19,
+    "10": 19,
+    "11": 21, // 困难
+    "12": 21,
+    "13": 21,
+    "14": 21,
+    "15": 21  // 最难
   }
   return sizes[level as keyof typeof sizes] || 11
 }
@@ -37,60 +37,84 @@ const generateMaze = (size: number) => {
   const start = { x: 1, y: 1 }
   const end = { x: size - 2, y: size - 2 }
   
-  // 使用深度优先搜索生成迷宫
-  const carve = (x: number, y: number) => {
-    const directions = [
-      [0, -2], // 上
-      [2, 0],  // 右
-      [0, 2],  // 下
-      [-2, 0]  // 左
-    ].sort(() => Math.random() - 0.5)
+  // 获取所有可能的格子点
+  const cells: [number, number][] = []
+  for (let y = 1; y < size - 1; y += 2) {
+    for (let x = 1; x < size - 1; x += 2) {
+      cells.push([x, y])
+    }
+  }
+  
+  // 随机打乱格子顺序
+  cells.sort(() => Math.random() - 0.5)
+  
+  // 记录已访问的点
+  const visited = new Set<string>()
+  const visit = (x: number, y: number) => visited.add(`${x},${y}`)
+  const isVisited = (x: number, y: number) => visited.has(`${x},${y}`)
+  
+  // Wilson 算法的随机游走
+  const randomWalk = (startX: number, startY: number) => {
+    const path: [number, number][] = [[startX, startY]]
+    let currentX = startX
+    let currentY = startY
     
-    maze[y][x] = 0
-    
-    for (const [dx, dy] of directions) {
-      const newX = x + dx
-      const newY = y + dy
+    while (!isVisited(currentX, currentY)) {
+      const directions = [
+        [0, -2], // 上
+        [2, 0],  // 右
+        [0, 2],  // 下
+        [-2, 0]  // 左
+      ].sort(() => Math.random() - 0.5)
       
-      if (
-        newX > 0 && newX < size - 1 &&
-        newY > 0 && newY < size - 1 &&
-        maze[newY][newX] === 1
-      ) {
-        maze[y + dy/2][x + dx/2] = 0
-        maze[newY][newX] = 0
-        carve(newX, newY)
+      for (const [dx, dy] of directions) {
+        const newX = currentX + dx
+        const newY = currentY + dy
+        
+        if (newX > 0 && newX < size - 1 && newY > 0 && newY < size - 1) {
+          // 检查路径是否形成了环
+          const pathIndex = path.findIndex(([x, y]) => x === newX && y === newY)
+          if (pathIndex !== -1) {
+            // 如果形成环，删除环
+            path.splice(pathIndex + 1)
+          }
+          
+          path.push([newX, newY])
+          currentX = newX
+          currentY = newY
+          break
+        }
       }
     }
+    
+    return path
   }
   
-  // 从起点开始生成迷宫
-  carve(start.x, start.y)
-  
-  // 确保终点可达（只生成一条路径）
-  let currentX = end.x
-  let currentY = end.y
-  
-  while (maze[currentY][currentX] === 1) {
-    maze[currentY][currentX] = 0
-    
-    // 总是尝试向左或向上移动，确保路径不会重叠
-    if (currentX > 1 && maze[currentY][currentX - 2] === 0) {
-      maze[currentY][currentX - 1] = 0
-      currentX -= 2
-    } else if (currentY > 1 && maze[currentY - 2][currentX] === 0) {
-      maze[currentY - 1][currentX] = 0
-      currentY -= 2
-    } else if (currentX > 1) {
-      maze[currentY][currentX - 1] = 0
-      currentX -= 2
-    } else {
-      maze[currentY - 1][currentX] = 0
-      currentY -= 2
+  // 将路径添加到迷宫中
+  const addPathToMaze = (path: [number, number][]) => {
+    for (let i = 0; i < path.length - 1; i++) {
+      const [x1, y1] = path[i]
+      const [x2, y2] = path[i + 1]
+      maze[y1][x1] = 0
+      maze[y2][x2] = 0
+      maze[y1 + (y2 - y1)/2][x1 + (x2 - x1)/2] = 0
     }
   }
   
-  // 设置起点和终点
+  // 从终点开始
+  visit(end.x, end.y)
+  maze[end.y][end.x] = 0
+  
+  // 对每个未访问的格子执行 Wilson 算法
+  for (const [x, y] of cells) {
+    if (!isVisited(x, y)) {
+      const path = randomWalk(x, y)
+      addPathToMaze(path)
+      path.forEach(([px, py]) => visit(px, py))
+    }
+  }
+  
+  // 确保起点和终点
   maze[start.y][start.x] = 0
   maze[end.y][end.x] = 2
   
@@ -220,7 +244,8 @@ export default function Game({ params }: { params: { level: string } }) {
                   <motion.div
                     key={`${x}-${y}`}
                     className={`
-                      ${mazeSize <= 15 ? 'w-6 h-6' : 'w-4 h-4'}
+                      ${mazeSize <= 15 ? 'w-6 h-6' : 
+                        mazeSize <= 19 ? 'w-5 h-5' : 'w-4 h-4'}
                       ${cell === 1 ? 'bg-gray-800' : 'bg-gray-100'}
                       ${cell === PLAYER ? 'bg-red-500 rounded-full' : ''}
                       ${cell === -1 ? 'bg-gray-900' : ''}
